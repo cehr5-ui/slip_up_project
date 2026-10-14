@@ -5,6 +5,7 @@ namespace SlipUp
     public class PlayerCollector : MonoBehaviour
     {
         [SerializeField] private MeshRenderer _meshRenderer;
+        [SerializeField] private ScoreView _scoreView;
         [SerializeField] private float _flashDuration = 0.15f;
 
         private int _score;
@@ -31,6 +32,7 @@ namespace SlipUp
 
             Destroy(coin.gameObject);
             _score++;
+            _scoreView.SetScore(_score);
             Debug.Log(_score);
             Flash();
         }
