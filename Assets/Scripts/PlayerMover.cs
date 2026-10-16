@@ -1,16 +1,23 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace SlipUp
 {
     public class PlayerMover : MonoBehaviour
     {
+        private const float GroundNormalY = 0.5f;
+
         [SerializeField] private Rigidbody _rigidbody;
         [SerializeField] private Transform _cameraTransform;
         [SerializeField] private float _moveSpeed = 6f;
         [SerializeField] private float _acceleration = 20f;
         [SerializeField] private float _deceleration = 30f;
+        [SerializeField] private float _jumpSpeed = 7f;
 
+        private readonly List<Vector3> _wallNormals = new List<Vector3>(4);
         private Vector3 _planarInput;
+        private bool _isJumpRequested;
+        private bool _isGrounded;
 
         private void Awake()
         {
@@ -26,6 +33,13 @@ namespace SlipUp
         private void Update()
         {
             _planarInput = ReadPlanarInput();
+
+            if (Input.GetKeyDown(KeyCode.Space) == false)
+            {
+                return;
+            }
+
+            _isJumpRequested = true;
         }
 
         private void FixedUpdate()
@@ -41,7 +55,33 @@ namespace SlipUp
             float maxSpeedChange = rate * Time.fixedDeltaTime;
 
             Vector3 nextPlanarVelocity = Vector3.MoveTowards(currentPlanarVelocity, targetVelocity, maxSpeedChange);
+            nextPlanarVelocity = SlideAlongWalls(nextPlanarVelocity);
+            _wallNormals.Clear();
             _rigidbody.linearVelocity = new Vector3(nextPlanarVelocity.x, currentVelocity.y, nextPlanarVelocity.z);
+            ApplyJump();
+
+            if (_rigidbody.IsSleeping())
+            {
+                return;
+            }
+
+            _isGrounded = false;
+        }
+
+        private void OnCollisionStay(Collision collision)
+        {
+            for (int i = 0; i < collision.contactCount; i++)
+            {
+                Vector3 normal = collision.GetContact(i).normal;
+
+                if (normal.y > GroundNormalY)
+                {
+                    _isGrounded = true;
+                    continue;
+                }
+
+                _wallNormals.Add(normal);
+            }
         }
 
         private Vector3 ReadPlanarInput()
@@ -56,6 +96,51 @@ namespace SlipUp
             }
 
             return inputDirection;
+        }
+
+        private void ApplyJump()
+        {
+            if (_isJumpRequested == false)
+            {
+                return;
+            }
+
+            _isJumpRequested = false;
+
+            if (_isGrounded == false)
+            {
+                return;
+            }
+
+            Vector3 velocity = _rigidbody.linearVelocity;
+            velocity.y = _jumpSpeed;
+            _rigidbody.linearVelocity = velocity;
+        }
+
+        private Vector3 SlideAlongWalls(Vector3 planarVelocity)
+        {
+            for (int i = 0; i < _wallNormals.Count; i++)
+            {
+                Vector3 normal = _wallNormals[i];
+                normal.y = 0f;
+
+                if (normal.sqrMagnitude < 0.0001f)
+                {
+                    continue;
+                }
+
+                normal.Normalize();
+                float intoWall = Vector3.Dot(planarVelocity, normal);
+
+                if (intoWall >= 0f)
+                {
+                    continue;
+                }
+
+                planarVelocity -= normal * intoWall;
+            }
+
+            return planarVelocity;
         }
     }
 }
