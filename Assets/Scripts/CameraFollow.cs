@@ -7,10 +7,20 @@ namespace SlipUp
         [SerializeField] private Transform _target;
         [SerializeField] private Vector3 _offset = new Vector3(0f, 3.5f, -8f);
         [SerializeField] private float _followSpeed = 10f;
-        [SerializeField] private float _yawSpeed = 5f;
+        [SerializeField] private float _yawSpeed = 2f;
+        [SerializeField] private float _pitchSpeed = 2f;
+        [SerializeField] private float _minPitch = -25f;
+        [SerializeField] private float _maxPitch = 60f;
+        [SerializeField] private float _focusHeight = 0.5f;
+        [SerializeField] private float _collisionRadius = 0.3f;
+        [SerializeField] private float _collisionPadding = 0.1f;
+        [SerializeField] private float _minDistance = 1f;
+        [SerializeField] private LayerMask _collisionMask = ~0;
         [SerializeField] private bool _useSmoothing = true;
 
+        private readonly RaycastHit[] _hits = new RaycastHit[16];
         private float _yaw;
+        private float _pitch;
         private Vector3 _pivotPosition;
         private bool _hasPivot;
 
@@ -30,7 +40,9 @@ namespace SlipUp
             Cursor.lockState = CursorLockMode.Locked;
             Cursor.visible = false;
             _yaw += Input.GetAxis("Mouse X") * _yawSpeed;
-            Quaternion yawRotation = Quaternion.Euler(0f, _yaw, 0f);
+            _pitch += Input.GetAxis("Mouse Y") * _pitchSpeed;
+            _pitch = Mathf.Clamp(_pitch, _minPitch, _maxPitch);
+            Quaternion orbitRotation = Quaternion.Euler(_pitch, _yaw, 0f);
 
             if (_hasPivot == false)
             {
@@ -48,8 +60,57 @@ namespace SlipUp
                 _pivotPosition = _target.position;
             }
 
-            transform.position = _pivotPosition + yawRotation * _offset;
+            Vector3 desiredPosition = _pivotPosition + orbitRotation * _offset;
+            transform.position = KeepOutOfSurfaces(desiredPosition);
             transform.LookAt(_target.position);
+        }
+
+        private Vector3 KeepOutOfSurfaces(Vector3 desiredPosition)
+        {
+            Vector3 focus = _pivotPosition + Vector3.up * _focusHeight;
+            Vector3 direction = desiredPosition - focus;
+            float distance = direction.magnitude;
+
+            if (distance < _minDistance)
+            {
+                return focus + direction.normalized * _minDistance;
+            }
+
+            direction /= distance;
+            int hitCount = Physics.SphereCastNonAlloc(focus, _collisionRadius, direction, _hits, distance, _collisionMask, QueryTriggerInteraction.Ignore);
+            float allowedDistance = distance;
+
+            for (int i = 0; i < hitCount; i++)
+            {
+                if (IsOwnCollider(_hits[i].transform))
+                {
+                    continue;
+                }
+
+                float surfaceDistance = _hits[i].distance - _collisionPadding;
+
+                if (surfaceDistance < allowedDistance)
+                {
+                    allowedDistance = surfaceDistance;
+                }
+            }
+
+            if (allowedDistance < _minDistance)
+            {
+                allowedDistance = _minDistance;
+            }
+
+            return focus + direction * allowedDistance;
+        }
+
+        private bool IsOwnCollider(Transform hitTransform)
+        {
+            if (hitTransform == _target || hitTransform.IsChildOf(_target))
+            {
+                return true;
+            }
+
+            return _target.IsChildOf(hitTransform);
         }
     }
 }

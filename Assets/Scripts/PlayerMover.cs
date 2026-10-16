@@ -6,6 +6,7 @@ namespace SlipUp
     public class PlayerMover : MonoBehaviour
     {
         private const float GroundNormalY = 0.5f;
+        private const float SpeedPerCoin = 0.02f;
 
         [SerializeField] private Rigidbody _rigidbody;
         [SerializeField] private Transform _cameraTransform;
@@ -13,6 +14,7 @@ namespace SlipUp
         [SerializeField] private float _acceleration = 20f;
         [SerializeField] private float _deceleration = 30f;
         [SerializeField] private float _jumpSpeed = 7f;
+        [SerializeField] private PlayerCollector _collector;
 
         private readonly List<Vector3> _wallNormals = new List<Vector3>(4);
         private Vector3 _planarInput;
@@ -46,14 +48,15 @@ namespace SlipUp
         {
             Vector3 forward = Vector3.ProjectOnPlane(_cameraTransform.forward, Vector3.up).normalized;
             Vector3 right = Vector3.ProjectOnPlane(_cameraTransform.right, Vector3.up).normalized;
-            Vector3 targetVelocity = (forward * _planarInput.z + right * _planarInput.x) * _moveSpeed;
+            Vector3 wishDirection = forward * _planarInput.z + right * _planarInput.x;
+            float maxSpeed = _moveSpeed * (1f + _collector.Score * SpeedPerCoin);
+            Vector3 targetVelocity = wishDirection * maxSpeed;
 
             Vector3 currentVelocity = _rigidbody.linearVelocity;
             Vector3 currentPlanarVelocity = new Vector3(currentVelocity.x, 0f, currentVelocity.z);
 
             float rate = _planarInput.sqrMagnitude > 0.01f ? _acceleration : _deceleration;
             float maxSpeedChange = rate * Time.fixedDeltaTime;
-
             Vector3 nextPlanarVelocity = Vector3.MoveTowards(currentPlanarVelocity, targetVelocity, maxSpeedChange);
             nextPlanarVelocity = SlideAlongWalls(nextPlanarVelocity);
             _wallNormals.Clear();

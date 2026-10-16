@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace SlipUp
@@ -7,13 +8,27 @@ namespace SlipUp
         [SerializeField] private GameObject _coinPrefab;
         [SerializeField] private Transform[] _points;
 
+        private static readonly List<CoinSpawner> _spawners = new List<CoinSpawner>();
+        private readonly List<GameObject> _coins = new List<GameObject>();
+
+        private void OnEnable()
+        {
+            if (Application.isPlaying == false)
+            {
+                return;
+            }
+
+            _spawners.Add(this);
+        }
+
+        private void OnDisable()
+        {
+            _spawners.Remove(this);
+        }
+
         private void Start()
         {
-            for (int i = 0; i < _points.Length; i++)
-            {
-                Transform point = _points[i];
-                Instantiate(_coinPrefab, point.position, point.rotation);
-            }
+            SpawnCoins();
         }
 
         private void OnDrawGizmos()
@@ -27,6 +42,48 @@ namespace SlipUp
                 Gizmos.DrawSphere(markerPosition, 0.25f);
                 Gizmos.DrawLine(point.position, markerPosition);
             }
+        }
+
+        public static void RespawnAll()
+        {
+            for (int i = 0; i < _spawners.Count; i++)
+            {
+                _spawners[i].RespawnCoins();
+            }
+        }
+
+        public void RespawnCoins()
+        {
+            ClearCoins();
+            SpawnCoins();
+        }
+
+        private void SpawnCoins()
+        {
+            for (int i = 0; i < _points.Length; i++)
+            {
+                Transform point = _points[i];
+                GameObject coin = Instantiate(_coinPrefab, point.position, point.rotation, transform);
+                _coins.Add(coin);
+            }
+        }
+
+        private void ClearCoins()
+        {
+            for (int i = 0; i < _coins.Count; i++)
+            {
+                GameObject coin = _coins[i];
+
+                if (coin == null)
+                {
+                    continue;
+                }
+
+                coin.SetActive(false);
+                Destroy(coin);
+            }
+
+            _coins.Clear();
         }
     }
 }

@@ -6,9 +6,12 @@ namespace SlipUp
     {
         [SerializeField] private Rigidbody _rigidbody;
         [SerializeField] private Collider _location;
-        [SerializeField] private float _outsideMargin = 2f;
+        [SerializeField] private PlayerCollector _collector;
+        [SerializeField] private float _outsideMargin = 20f;
 
         private Vector3 _startPosition;
+        private bool _isReturning;
+        private bool _hasRespawnedCoins;
 
         private void Awake()
         {
@@ -17,12 +20,35 @@ namespace SlipUp
 
         private void FixedUpdate()
         {
-            if (IsOutsideLocation == false)
+            if (IsOutsideLocation)
+            {
+                if (_isReturning)
+                {
+                    return;
+                }
+
+                TeleportToStart();
+                _collector.ResetScore();
+                _collector.PauseCollection();
+                _isReturning = true;
+                _hasRespawnedCoins = false;
+                return;
+            }
+
+            if (_isReturning == false)
             {
                 return;
             }
 
-            ReturnToStart();
+            if (_hasRespawnedCoins == false)
+            {
+                CoinSpawner.RespawnAll();
+                _hasRespawnedCoins = true;
+                return;
+            }
+
+            _collector.ResumeCollection();
+            _isReturning = false;
         }
 
         private bool IsOutsideLocation
@@ -47,7 +73,7 @@ namespace SlipUp
             }
         }
 
-        private void ReturnToStart()
+        private void TeleportToStart()
         {
             _rigidbody.linearVelocity = Vector3.zero;
             _rigidbody.angularVelocity = Vector3.zero;

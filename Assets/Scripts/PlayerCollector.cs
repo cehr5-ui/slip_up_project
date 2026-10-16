@@ -11,6 +11,9 @@ namespace SlipUp
         private int _score;
         private Material _material;
         private Color _originalColor;
+        private bool _isCollecting = true;
+
+        public int Score => _score;
 
         private void Awake()
         {
@@ -25,6 +28,11 @@ namespace SlipUp
 
         private void OnTriggerEnter(Collider other)
         {
+            if (_isCollecting == false)
+            {
+                return;
+            }
+
             if (other.TryGetComponent(out CoinSpin coin) == false)
             {
                 return;
@@ -35,6 +43,24 @@ namespace SlipUp
             _scoreView.SetScore(_score);
             Debug.Log(_score);
             Flash();
+        }
+
+        public void ResetScore()
+        {
+            _score = 0;
+            _scoreView.SetScore(_score);
+            CancelInvoke(nameof(RestoreColor));
+            RestoreColor();
+        }
+
+        public void PauseCollection()
+        {
+            _isCollecting = false;
+        }
+
+        public void ResumeCollection()
+        {
+            _isCollecting = true;
         }
 
         private void Flash()

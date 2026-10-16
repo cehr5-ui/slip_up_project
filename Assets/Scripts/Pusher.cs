@@ -4,19 +4,8 @@ namespace SlipUp
 {
     public class Pusher : MonoBehaviour
     {
-        [SerializeField] private Rigidbody _rigidbody;
-        [SerializeField] private Transform _pointA;
-        [SerializeField] private Transform _pointB;
         [SerializeField] private AudioSource _audioSource;
-        [SerializeField] private float _travelDuration = 2.5f;
         [SerializeField] private float _pushSpeed = 28f;
-
-        private void Update()
-        {
-            float progress = Mathf.PingPong(Time.time / _travelDuration, 1f);
-            Vector3 position = Vector3.Lerp(_pointA.position, _pointB.position, progress);
-            _rigidbody.MovePosition(position);
-        }
 
         private void OnCollisionEnter(Collision collision)
         {
@@ -31,14 +20,6 @@ namespace SlipUp
         private void OnCollisionStay(Collision collision)
         {
             TryPushAway(collision);
-        }
-
-        private void OnDrawGizmos()
-        {
-            Gizmos.color = Color.red;
-            Gizmos.DrawLine(_pointA.position, _pointB.position);
-            Gizmos.DrawWireSphere(_pointA.position, 0.25f);
-            Gizmos.DrawWireSphere(_pointB.position, 0.25f);
         }
 
         private bool TryPushAway(Collision collision)
