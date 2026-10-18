@@ -4,7 +4,6 @@ namespace SlipUp
 {
     public class Pusher : MonoBehaviour
     {
-        [SerializeField] private AudioSource _audioSource;
         [SerializeField] private float _pushSpeed = 28f;
 
         private void OnCollisionEnter(Collision collision)
@@ -14,7 +13,8 @@ namespace SlipUp
                 return;
             }
 
-            _audioSource.Play();
+            collision.gameObject.TryGetComponent(out PlayerAudio playerAudio);
+            playerAudio.PlayHit();
         }
 
         private void OnCollisionStay(Collision collision)

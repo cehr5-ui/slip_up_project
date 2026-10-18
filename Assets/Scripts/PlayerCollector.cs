@@ -6,6 +6,7 @@ namespace SlipUp
     {
         [SerializeField] private MeshRenderer _meshRenderer;
         [SerializeField] private ScoreView _scoreView;
+        [SerializeField] private PlayerAudio _audio;
         [SerializeField] private float _flashDuration = 0.15f;
 
         private int _score;
@@ -42,6 +43,7 @@ namespace SlipUp
             _score++;
             _scoreView.SetScore(_score);
             Debug.Log(_score);
+            _audio.PlayCollect();
             Flash();
         }
 

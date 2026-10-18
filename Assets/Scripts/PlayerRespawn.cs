@@ -57,19 +57,7 @@ namespace SlipUp
             {
                 Bounds bounds = _location.bounds;
                 bounds.Expand(_outsideMargin);
-                Vector3 position = _rigidbody.position;
-
-                if (position.y < bounds.min.y)
-                {
-                    return true;
-                }
-
-                if (position.x < bounds.min.x || position.x > bounds.max.x)
-                {
-                    return true;
-                }
-
-                return position.z < bounds.min.z || position.z > bounds.max.z;
+                return _rigidbody.position.y < bounds.min.y;
             }
         }
 

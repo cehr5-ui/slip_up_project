@@ -49,13 +49,15 @@ namespace SlipUp
             Vector3 forward = Vector3.ProjectOnPlane(_cameraTransform.forward, Vector3.up).normalized;
             Vector3 right = Vector3.ProjectOnPlane(_cameraTransform.right, Vector3.up).normalized;
             Vector3 wishDirection = forward * _planarInput.z + right * _planarInput.x;
-            float maxSpeed = _moveSpeed * (1f + _collector.Score * SpeedPerCoin);
+            float coinBonus = 1f + _collector.Score * SpeedPerCoin;
+            float maxSpeed = _moveSpeed * coinBonus;
             Vector3 targetVelocity = wishDirection * maxSpeed;
 
             Vector3 currentVelocity = _rigidbody.linearVelocity;
             Vector3 currentPlanarVelocity = new Vector3(currentVelocity.x, 0f, currentVelocity.z);
 
-            float rate = _planarInput.sqrMagnitude > 0.01f ? _acceleration : _deceleration;
+            float acceleration = _acceleration * coinBonus;
+            float rate = _planarInput.sqrMagnitude > 0.01f ? acceleration : _deceleration;
             float maxSpeedChange = rate * Time.fixedDeltaTime;
             Vector3 nextPlanarVelocity = Vector3.MoveTowards(currentPlanarVelocity, targetVelocity, maxSpeedChange);
             nextPlanarVelocity = SlideAlongWalls(nextPlanarVelocity);
