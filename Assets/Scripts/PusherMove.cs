@@ -9,11 +9,19 @@ namespace SlipUp
         [SerializeField] private Transform _pointB;
         [SerializeField] private float _travelDuration = 2.5f;
 
+        private float _travelTime;
+
+        private void OnEnable()
+        {
+            _travelTime = 0f;
+        }
+
         private void Update()
         {
-            float progress = Mathf.PingPong(Time.time / _travelDuration, 1f);
+            float progress = Mathf.PingPong(_travelTime / _travelDuration, 1f);
             Vector3 position = Vector3.Lerp(_pointA.position, _pointB.position, progress);
             _rigidbody.MovePosition(position);
+            _travelTime += Time.deltaTime;
         }
 
         private void OnDrawGizmos()

@@ -7,6 +7,7 @@ namespace SlipUp
     {
         private const float GroundNormalY = 0.5f;
         private const float SpeedPerCoin = 0.02f;
+        private const float DashSpeedMultiplier = 3f;
 
         [SerializeField] private Rigidbody _rigidbody;
         [SerializeField] private Transform _cameraTransform;
@@ -14,12 +15,19 @@ namespace SlipUp
         [SerializeField] private float _acceleration = 20f;
         [SerializeField] private float _deceleration = 30f;
         [SerializeField] private float _jumpSpeed = 7f;
+        [SerializeField] private float _dashDistance = 5f;
         [SerializeField] private PlayerCollector _collector;
 
         private readonly List<Vector3> _wallNormals = new List<Vector3>(4);
         private Vector3 _planarInput;
+        private Vector3 _dashDirection;
         private bool _isJumpRequested;
+        private bool _isDashRequested;
+        private bool _isDashing;
+        private bool _hasDashed;
         private bool _isGrounded;
+        private float _dashDistanceLeft;
+        private float _dashSpeed;
 
         private void Awake()
         {
@@ -36,6 +44,11 @@ namespace SlipUp
         {
             _planarInput = ReadPlanarInput();
 
+            if (Input.GetKeyDown(KeyCode.F))
+            {
+                _isDashRequested = true;
+            }
+
             if (Input.GetKeyDown(KeyCode.Space) == false)
             {
                 return;
@@ -46,11 +59,25 @@ namespace SlipUp
 
         private void FixedUpdate()
         {
+            float coinBonus = 1f + _collector.Score * SpeedPerCoin;
+            float maxSpeed = _moveSpeed * coinBonus;
+
+            if (_isDashRequested)
+            {
+                _isDashRequested = false;
+                TryStartDash(maxSpeed);
+            }
+
+            if (_isDashing)
+            {
+                ApplyDash();
+                ClearGrounded();
+                return;
+            }
+
             Vector3 forward = Vector3.ProjectOnPlane(_cameraTransform.forward, Vector3.up).normalized;
             Vector3 right = Vector3.ProjectOnPlane(_cameraTransform.right, Vector3.up).normalized;
             Vector3 wishDirection = forward * _planarInput.z + right * _planarInput.x;
-            float coinBonus = 1f + _collector.Score * SpeedPerCoin;
-            float maxSpeed = _moveSpeed * coinBonus;
             Vector3 targetVelocity = wishDirection * maxSpeed;
 
             Vector3 currentVelocity = _rigidbody.linearVelocity;
@@ -64,13 +91,7 @@ namespace SlipUp
             _wallNormals.Clear();
             _rigidbody.linearVelocity = new Vector3(nextPlanarVelocity.x, currentVelocity.y, nextPlanarVelocity.z);
             ApplyJump();
-
-            if (_rigidbody.IsSleeping())
-            {
-                return;
-            }
-
-            _isGrounded = false;
+            ClearGrounded();
         }
 
         private void OnCollisionStay(Collision collision)
@@ -82,6 +103,7 @@ namespace SlipUp
                 if (normal.y > GroundNormalY)
                 {
                     _isGrounded = true;
+                    _hasDashed = false;
                     continue;
                 }
 
@@ -103,6 +125,16 @@ namespace SlipUp
             return inputDirection;
         }
 
+        private void ClearGrounded()
+        {
+            if (_rigidbody.IsSleeping())
+            {
+                return;
+            }
+
+            _isGrounded = false;
+        }
+
         private void ApplyJump()
         {
             if (_isJumpRequested == false)
@@ -120,6 +152,47 @@ namespace SlipUp
             Vector3 velocity = _rigidbody.linearVelocity;
             velocity.y = _jumpSpeed;
             _rigidbody.linearVelocity = velocity;
+        }
+
+        private void TryStartDash(float maxSpeed)
+        {
+            if (_isGrounded || _hasDashed)
+            {
+                return;
+            }
+
+            Vector3 velocity = _rigidbody.linearVelocity;
+            Vector3 planarVelocity = new Vector3(velocity.x, 0f, velocity.z);
+
+            if (planarVelocity.sqrMagnitude <= 0.01f)
+            {
+                return;
+            }
+
+            velocity.y = 0f;
+            _rigidbody.linearVelocity = velocity;
+            _dashDirection = planarVelocity.normalized;
+            _dashSpeed = maxSpeed * DashSpeedMultiplier;
+            _dashDistanceLeft = _dashDistance;
+            _isDashing = true;
+            _hasDashed = true;
+        }
+
+        private void ApplyDash()
+        {
+            float step = _dashSpeed * Time.fixedDeltaTime;
+
+            if (step >= _dashDistanceLeft)
+            {
+                float endSpeed = _dashDistanceLeft / Time.fixedDeltaTime;
+                _rigidbody.linearVelocity = new Vector3(_dashDirection.x * endSpeed, 0f, _dashDirection.z * endSpeed);
+                _dashDistanceLeft = 0f;
+                _isDashing = false;
+                return;
+            }
+
+            _dashDistanceLeft -= step;
+            _rigidbody.linearVelocity = new Vector3(_dashDirection.x * _dashSpeed, 0f, _dashDirection.z * _dashSpeed);
         }
 
         private Vector3 SlideAlongWalls(Vector3 planarVelocity)

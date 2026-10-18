@@ -11,6 +11,21 @@ namespace SlipUp
         private static readonly List<CoinSpawner> _spawners = new List<CoinSpawner>();
         private readonly List<GameObject> _coins = new List<GameObject>();
 
+        public static int CoinCount
+        {
+            get
+            {
+                int coinCount = 0;
+
+                for (int i = 0; i < _spawners.Count; i++)
+                {
+                    coinCount += _spawners[i]._points.Length;
+                }
+
+                return coinCount;
+            }
+        }
+
         private void OnEnable()
         {
             if (Application.isPlaying == false)

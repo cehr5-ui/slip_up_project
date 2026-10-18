@@ -42,6 +42,8 @@ namespace SlipUp
             Destroy(coin.gameObject);
             _score++;
             _scoreView.SetScore(_score);
+            int coinCount = CoinSpawner.CoinCount;
+            _scoreView.SetCleared(coinCount > 0 && _score >= coinCount);
             Debug.Log(_score);
             _audio.PlayCollect();
             Flash();
@@ -51,6 +53,7 @@ namespace SlipUp
         {
             _score = 0;
             _scoreView.SetScore(_score);
+            _scoreView.SetCleared(false);
             CancelInvoke(nameof(RestoreColor));
             RestoreColor();
         }
