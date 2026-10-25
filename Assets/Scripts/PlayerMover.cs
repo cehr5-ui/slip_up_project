@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using UnityEngine;
 
 namespace SlipUp
@@ -10,15 +9,16 @@ namespace SlipUp
         private const float DashSpeedMultiplier = 3f;
 
         [SerializeField] private Rigidbody _rigidbody;
-        [SerializeField] private Transform _cameraTransform;
         [SerializeField] private float _moveSpeed = 6f;
         [SerializeField] private float _acceleration = 20f;
         [SerializeField] private float _deceleration = 30f;
         [SerializeField] private float _jumpSpeed = 7f;
+        [SerializeField] private float _maxFallSpeed = 40f;
         [SerializeField] private float _dashDistance = 5f;
+        [SerializeField] private float _bounceDuration = 0.15f;
         [SerializeField] private PlayerCollector _collector;
 
-        private readonly List<Vector3> _wallNormals = new List<Vector3>(4);
+        private Level _level;
         private Vector3 _planarInput;
         private Vector3 _dashDirection;
         private bool _isJumpRequested;
@@ -28,6 +28,13 @@ namespace SlipUp
         private bool _isGrounded;
         private float _dashDistanceLeft;
         private float _dashSpeed;
+        private float _bounceTimeLeft;
+        private Vector3 _bounceVelocity;
+
+        internal void Initialize(Level level)
+        {
+            _level = level;
+        }
 
         private void Awake()
         {
@@ -38,6 +45,11 @@ namespace SlipUp
 
             _rigidbody.freezeRotation = true;
             _rigidbody.interpolation = RigidbodyInterpolation.Interpolate;
+        }
+
+        private void OnDestroy()
+        {
+            _level = null;
         }
 
         private void Update()
@@ -59,6 +71,14 @@ namespace SlipUp
 
         private void FixedUpdate()
         {
+            if (_bounceTimeLeft > 0f)
+            {
+                _bounceTimeLeft -= Time.fixedDeltaTime;
+                _rigidbody.linearVelocity = _bounceVelocity;
+                ClearGrounded();
+                return;
+            }
+
             float coinBonus = 1f + _collector.Score * SpeedPerCoin;
             float maxSpeed = _moveSpeed * coinBonus;
 
@@ -75,8 +95,8 @@ namespace SlipUp
                 return;
             }
 
-            Vector3 forward = Vector3.ProjectOnPlane(_cameraTransform.forward, Vector3.up).normalized;
-            Vector3 right = Vector3.ProjectOnPlane(_cameraTransform.right, Vector3.up).normalized;
+            Vector3 forward = Vector3.ProjectOnPlane(_level.CameraTransform.forward, Vector3.up).normalized;
+            Vector3 right = Vector3.ProjectOnPlane(_level.CameraTransform.right, Vector3.up).normalized;
             Vector3 wishDirection = forward * _planarInput.z + right * _planarInput.x;
             Vector3 targetVelocity = wishDirection * maxSpeed;
 
@@ -87,9 +107,19 @@ namespace SlipUp
             float rate = _planarInput.sqrMagnitude > 0.01f ? acceleration : _deceleration;
             float maxSpeedChange = rate * Time.fixedDeltaTime;
             Vector3 nextPlanarVelocity = Vector3.MoveTowards(currentPlanarVelocity, targetVelocity, maxSpeedChange);
-            nextPlanarVelocity = SlideAlongWalls(nextPlanarVelocity);
-            _wallNormals.Clear();
-            _rigidbody.linearVelocity = new Vector3(nextPlanarVelocity.x, currentVelocity.y, nextPlanarVelocity.z);
+            float verticalSpeed = currentVelocity.y;
+
+            if (verticalSpeed < 0f)
+            {
+                verticalSpeed += Physics.gravity.y * Time.fixedDeltaTime;
+            }
+
+            if (verticalSpeed < -_maxFallSpeed)
+            {
+                verticalSpeed = -_maxFallSpeed;
+            }
+
+            _rigidbody.linearVelocity = new Vector3(nextPlanarVelocity.x, verticalSpeed, nextPlanarVelocity.z);
             ApplyJump();
             ClearGrounded();
         }
@@ -104,11 +134,18 @@ namespace SlipUp
                 {
                     _isGrounded = true;
                     _hasDashed = false;
-                    continue;
                 }
-
-                _wallNormals.Add(normal);
             }
+        }
+
+        internal void Bounce(Vector3 velocity)
+        {
+            _isDashing = false;
+            _isDashRequested = false;
+            _isJumpRequested = false;
+            _bounceVelocity = velocity;
+            _bounceTimeLeft = _bounceDuration;
+            _rigidbody.linearVelocity = velocity;
         }
 
         private Vector3 ReadPlanarInput()
@@ -193,32 +230,6 @@ namespace SlipUp
 
             _dashDistanceLeft -= step;
             _rigidbody.linearVelocity = new Vector3(_dashDirection.x * _dashSpeed, 0f, _dashDirection.z * _dashSpeed);
-        }
-
-        private Vector3 SlideAlongWalls(Vector3 planarVelocity)
-        {
-            for (int i = 0; i < _wallNormals.Count; i++)
-            {
-                Vector3 normal = _wallNormals[i];
-                normal.y = 0f;
-
-                if (normal.sqrMagnitude < 0.0001f)
-                {
-                    continue;
-                }
-
-                normal.Normalize();
-                float intoWall = Vector3.Dot(planarVelocity, normal);
-
-                if (intoWall >= 0f)
-                {
-                    continue;
-                }
-
-                planarVelocity -= normal * intoWall;
-            }
-
-            return planarVelocity;
         }
     }
 }

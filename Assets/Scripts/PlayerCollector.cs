@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 
 namespace SlipUp
@@ -5,25 +6,36 @@ namespace SlipUp
     public class PlayerCollector : MonoBehaviour
     {
         [SerializeField] private MeshRenderer _meshRenderer;
-        [SerializeField] private ScoreView _scoreView;
         [SerializeField] private PlayerAudio _audio;
         [SerializeField] private float _flashDuration = 0.15f;
 
+        private Level _level;
         private int _score;
         private Material _material;
         private Color _originalColor;
+        private WaitForSeconds _flashDelay;
+        private Coroutine _flash;
         private bool _isCollecting = true;
 
         public int Score => _score;
+
+        internal void Initialize(Level level)
+        {
+            _level = level;
+        }
 
         private void Awake()
         {
             _material = _meshRenderer.material;
             _originalColor = _material.color;
+            _flashDelay = new WaitForSeconds(_flashDuration);
         }
 
         private void OnDestroy()
         {
+            _level = null;
+            _flash = null;
+            _flashDelay = null;
             Destroy(_material);
         }
 
@@ -34,17 +46,13 @@ namespace SlipUp
                 return;
             }
 
-            if (other.TryGetComponent(out CoinSpin coin) == false)
+            if (_level.TryTakeCoin(other) == false)
             {
                 return;
             }
 
-            Destroy(coin.gameObject);
             _score++;
-            _scoreView.SetScore(_score);
-            int coinCount = CoinSpawner.CoinCount;
-            _scoreView.SetCleared(coinCount > 0 && _score >= coinCount);
-            Debug.Log(_score);
+            _level.ShowScore(_score);
             _audio.PlayCollect();
             Flash();
         }
@@ -52,10 +60,8 @@ namespace SlipUp
         public void ResetScore()
         {
             _score = 0;
-            _scoreView.SetScore(_score);
-            _scoreView.SetCleared(false);
-            CancelInvoke(nameof(RestoreColor));
-            RestoreColor();
+            _level.ShowScore(_score);
+            StopFlash();
         }
 
         public void PauseCollection()
@@ -70,14 +76,27 @@ namespace SlipUp
 
         private void Flash()
         {
-            CancelInvoke(nameof(RestoreColor));
+            StopFlash();
             _material.color = Color.white;
-            Invoke(nameof(RestoreColor), _flashDuration);
+            _flash = StartCoroutine(RestoreColor());
         }
 
-        private void RestoreColor()
+        private void StopFlash()
         {
+            if (_flash != null)
+            {
+                StopCoroutine(_flash);
+                _flash = null;
+            }
+
             _material.color = _originalColor;
+        }
+
+        private IEnumerator RestoreColor()
+        {
+            yield return _flashDelay;
+            _material.color = _originalColor;
+            _flash = null;
         }
     }
 }

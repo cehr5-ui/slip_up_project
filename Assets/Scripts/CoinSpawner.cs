@@ -8,38 +8,9 @@ namespace SlipUp
         [SerializeField] private GameObject _coinPrefab;
         [SerializeField] private Transform[] _points;
 
-        private static readonly List<CoinSpawner> _spawners = new List<CoinSpawner>();
         private readonly List<GameObject> _coins = new List<GameObject>();
 
-        public static int CoinCount
-        {
-            get
-            {
-                int coinCount = 0;
-
-                for (int i = 0; i < _spawners.Count; i++)
-                {
-                    coinCount += _spawners[i]._points.Length;
-                }
-
-                return coinCount;
-            }
-        }
-
-        private void OnEnable()
-        {
-            if (Application.isPlaying == false)
-            {
-                return;
-            }
-
-            _spawners.Add(this);
-        }
-
-        private void OnDisable()
-        {
-            _spawners.Remove(this);
-        }
+        public int CoinCount => _points.Length;
 
         private void Start()
         {
@@ -56,14 +27,6 @@ namespace SlipUp
                 Vector3 markerPosition = point.position + Vector3.up * 0.5f;
                 Gizmos.DrawSphere(markerPosition, 0.25f);
                 Gizmos.DrawLine(point.position, markerPosition);
-            }
-        }
-
-        public static void RespawnAll()
-        {
-            for (int i = 0; i < _spawners.Count; i++)
-            {
-                _spawners[i].RespawnCoins();
             }
         }
 

@@ -149,7 +149,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0b801320ef220c348939d87ac332f910, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _pushSpeed: 28
   _rigidbody: {fileID: 2952564036204530068}
   _pointA: {fileID: 6368341202737925047}
   _pointB: {fileID: 1425274248920188572}

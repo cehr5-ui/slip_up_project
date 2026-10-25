@@ -4,45 +4,116 @@ namespace SlipUp
 {
     public class Pusher : MonoBehaviour
     {
-        [SerializeField] private float _pushSpeed = 28f;
+        [SerializeField] private float _upwardBounce = 0.5f;
+
+        private Level _level;
+
+        internal void Initialize(Level level)
+        {
+            _level = level;
+        }
+
+        private void OnDestroy()
+        {
+            _level = null;
+        }
 
         private void OnCollisionEnter(Collision collision)
         {
-            if (TryPushAway(collision) == false)
+            if (_level.IsPlayer(collision.gameObject) == false)
             {
                 return;
             }
 
-            collision.gameObject.TryGetComponent(out PlayerAudio playerAudio);
-            playerAudio.PlayHit();
+            if (TryGetBounceVelocity(collision, out Vector3 bounceVelocity) == false)
+            {
+                return;
+            }
+
+            _level.BouncePlayer(bounceVelocity);
         }
 
-        private void OnCollisionStay(Collision collision)
+        private bool TryGetBounceVelocity(Collision collision, out Vector3 bounceVelocity)
         {
-            TryPushAway(collision);
-        }
+            bounceVelocity = Vector3.zero;
 
-        private bool TryPushAway(Collision collision)
-        {
-            if (collision.gameObject.TryGetComponent(out PlayerMover _) == false)
+            if (TryGetBounceNormal(collision, out Vector3 normal) == false)
             {
                 return false;
             }
 
-            Vector3 direction = collision.transform.position - transform.position;
-            direction.y = 0f;
+            Vector3 incoming = collision.relativeVelocity;
 
-            if (direction.sqrMagnitude < 0.0001f)
+            if (Vector3.Dot(incoming, normal) > 0f)
+            {
+                incoming = -incoming;
+            }
+
+            if (incoming.sqrMagnitude < 0.0001f)
             {
                 return false;
             }
 
-            direction.Normalize();
-            Rigidbody body = collision.rigidbody;
-            Vector3 velocity = body.linearVelocity;
-            velocity.x = direction.x * _pushSpeed;
-            velocity.z = direction.z * _pushSpeed;
-            body.linearVelocity = velocity;
+            Vector3 reflected = Vector3.Reflect(incoming, normal);
+
+            if (Vector3.Dot(reflected, normal) < 0f)
+            {
+                reflected = -reflected;
+            }
+
+            if (reflected.y > 0f)
+            {
+                reflected.y *= _upwardBounce;
+            }
+
+            bounceVelocity = reflected;
+            return true;
+        }
+
+        private bool TryGetBounceNormal(Collision collision, out Vector3 normal)
+        {
+            normal = Vector3.zero;
+
+            if (collision.contactCount == 0)
+            {
+                return false;
+            }
+
+            Vector3 motion = collision.relativeVelocity;
+            ContactPoint contact = collision.GetContact(0);
+            normal = contact.normal;
+            float bestAlignment = Vector3.Dot(normal, motion);
+            bestAlignment *= bestAlignment;
+
+            for (int i = 1; i < collision.contactCount; i++)
+            {
+                ContactPoint nextContact = collision.GetContact(i);
+                float alignment = Vector3.Dot(nextContact.normal, motion);
+                alignment *= alignment;
+
+                if (alignment <= bestAlignment)
+                {
+                    continue;
+                }
+
+                bestAlignment = alignment;
+                contact = nextContact;
+                normal = nextContact.normal;
+            }
+
+            Vector3 toPlayer = collision.rigidbody.worldCenterOfMass - contact.point;
+
+            if (Vector3.Dot(normal, toPlayer) < 0f)
+            {
+                normal = -normal;
+            }
+
+            if (normal.sqrMagnitude < 0.0001f)
+            {
+                return false;
+            }
+
+            normal.Normalize();
             return true;
         }
     }

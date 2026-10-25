@@ -5,17 +5,28 @@ namespace SlipUp
     public class PlayerRespawn : MonoBehaviour
     {
         [SerializeField] private Rigidbody _rigidbody;
-        [SerializeField] private Collider _location;
         [SerializeField] private PlayerCollector _collector;
-        [SerializeField] private float _outsideMargin = 20f;
 
+        private Level _level;
         private Vector3 _startPosition;
         private bool _isReturning;
         private bool _hasRespawnedCoins;
 
+        private bool IsOutsideLocation => _level.IsBelowArena(_rigidbody.position);
+
+        internal void Initialize(Level level)
+        {
+            _level = level;
+        }
+
         private void Awake()
         {
             _startPosition = _rigidbody.position;
+        }
+
+        private void OnDestroy()
+        {
+            _level = null;
         }
 
         private void FixedUpdate()
@@ -42,23 +53,13 @@ namespace SlipUp
 
             if (_hasRespawnedCoins == false)
             {
-                CoinSpawner.RespawnAll();
+                _level.RespawnCoins();
                 _hasRespawnedCoins = true;
                 return;
             }
 
             _collector.ResumeCollection();
             _isReturning = false;
-        }
-
-        private bool IsOutsideLocation
-        {
-            get
-            {
-                Bounds bounds = _location.bounds;
-                bounds.Expand(_outsideMargin);
-                return _rigidbody.position.y < bounds.min.y;
-            }
         }
 
         private void TeleportToStart()

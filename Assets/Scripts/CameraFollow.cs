@@ -4,7 +4,6 @@ namespace SlipUp
 {
     public class CameraFollow : MonoBehaviour
     {
-        [SerializeField] private Transform _target;
         [SerializeField] private Vector3 _offset = new Vector3(0f, 3.5f, -8f);
         [SerializeField] private float _followSpeed = 10f;
         [SerializeField] private float _yawSpeed = 2f;
@@ -19,10 +18,18 @@ namespace SlipUp
         [SerializeField] private bool _useSmoothing = true;
 
         private readonly RaycastHit[] _hits = new RaycastHit[16];
+        private Level _level;
         private float _yaw;
         private float _pitch;
         private Vector3 _pivotPosition;
         private bool _hasPivot;
+
+        private Transform PlayerFocus => _level.PlayerFocus;
+
+        internal void Initialize(Level level)
+        {
+            _level = level;
+        }
 
         private void OnDisable()
         {
@@ -30,13 +37,14 @@ namespace SlipUp
             Cursor.visible = true;
         }
 
+        private void OnDestroy()
+        {
+            _level = null;
+        }
+
         private void LateUpdate()
         {
-            if (_target == null)
-            {
-                return;
-            }
-
+            Transform playerFocus = PlayerFocus;
             Cursor.lockState = CursorLockMode.Locked;
             Cursor.visible = false;
             _yaw += Input.GetAxis("Mouse X") * _yawSpeed;
@@ -46,23 +54,23 @@ namespace SlipUp
 
             if (_hasPivot == false)
             {
-                _pivotPosition = _target.position;
+                _pivotPosition = playerFocus.position;
                 _hasPivot = true;
             }
 
             if (_useSmoothing)
             {
                 float t = 1f - Mathf.Exp(-_followSpeed * Time.deltaTime);
-                _pivotPosition = Vector3.Lerp(_pivotPosition, _target.position, t);
+                _pivotPosition = Vector3.Lerp(_pivotPosition, playerFocus.position, t);
             }
             else
             {
-                _pivotPosition = _target.position;
+                _pivotPosition = playerFocus.position;
             }
 
             Vector3 desiredPosition = _pivotPosition + orbitRotation * _offset;
             transform.position = KeepOutOfSurfaces(desiredPosition);
-            transform.LookAt(_target.position);
+            transform.LookAt(playerFocus.position);
         }
 
         private Vector3 KeepOutOfSurfaces(Vector3 desiredPosition)
@@ -105,12 +113,14 @@ namespace SlipUp
 
         private bool IsOwnCollider(Transform hitTransform)
         {
-            if (hitTransform == _target || hitTransform.IsChildOf(_target))
+            Transform playerFocus = PlayerFocus;
+
+            if (hitTransform == playerFocus || hitTransform.IsChildOf(playerFocus))
             {
                 return true;
             }
 
-            return _target.IsChildOf(hitTransform);
+            return playerFocus.IsChildOf(hitTransform);
         }
     }
 }
