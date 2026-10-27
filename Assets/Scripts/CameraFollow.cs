@@ -23,6 +23,7 @@ namespace SlipUp
         private float _pitch;
         private Vector3 _pivotPosition;
         private bool _hasPivot;
+        private bool _isLookEnabled;
 
         private Transform PlayerFocus => _level.PlayerFocus;
 
@@ -47,9 +48,14 @@ namespace SlipUp
             Transform playerFocus = PlayerFocus;
             Cursor.lockState = CursorLockMode.Locked;
             Cursor.visible = false;
-            _yaw += Input.GetAxis("Mouse X") * _yawSpeed;
-            _pitch += Input.GetAxis("Mouse Y") * _pitchSpeed;
-            _pitch = Mathf.Clamp(_pitch, _minPitch, _maxPitch);
+
+            if (_isLookEnabled)
+            {
+                _yaw += Input.GetAxis("Mouse X") * _yawSpeed;
+                _pitch += Input.GetAxis("Mouse Y") * _pitchSpeed;
+                _pitch = Mathf.Clamp(_pitch, _minPitch, _maxPitch);
+            }
+
             Quaternion orbitRotation = Quaternion.Euler(_pitch, _yaw, 0f);
 
             if (_hasPivot == false)
@@ -71,6 +77,11 @@ namespace SlipUp
             Vector3 desiredPosition = _pivotPosition + orbitRotation * _offset;
             transform.position = KeepOutOfSurfaces(desiredPosition);
             transform.LookAt(playerFocus.position);
+        }
+
+        internal void SetLookEnabled(bool isEnabled)
+        {
+            _isLookEnabled = isEnabled;
         }
 
         private Vector3 KeepOutOfSurfaces(Vector3 desiredPosition)

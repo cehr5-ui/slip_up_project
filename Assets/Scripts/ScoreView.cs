@@ -10,6 +10,7 @@ namespace SlipUp
 
         [SerializeField] private TextMeshProUGUI _label;
         [SerializeField] private TextMeshProUGUI _timeLabel;
+        [SerializeField] private TextMeshProUGUI _messageLabel;
 
         public void SetScore(int score)
         {
@@ -19,6 +20,11 @@ namespace SlipUp
         internal void SetTime(float time)
         {
             _timeLabel.text = string.Format(TimeFormat, time);
+        }
+
+        internal void SetMessage(string message)
+        {
+            _messageLabel.text = message;
         }
     }
 }

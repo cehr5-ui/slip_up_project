@@ -12,6 +12,8 @@ namespace SlipUp
 
         internal Transform Focus => _focus;
 
+        internal bool IsControlEnabled => _mover.IsControlEnabled;
+
         internal void Initialize(Level level)
         {
             _mover.Initialize(level);
@@ -23,6 +25,21 @@ namespace SlipUp
         {
             _mover.Bounce(velocity);
             _audio.PlayHit();
+        }
+
+        internal void BeginRun()
+        {
+            _mover.BeginRun();
+        }
+
+        internal void Freeze()
+        {
+            _mover.Freeze();
+        }
+
+        internal void Release()
+        {
+            _mover.Release();
         }
     }
 }

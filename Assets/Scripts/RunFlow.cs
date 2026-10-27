@@ -1,22 +1,36 @@
+using System.Collections;
 using UnityEngine;
 
 namespace SlipUp
 {
     public class RunFlow : MonoBehaviour
     {
+        private const float CountStepDuration = 1f;
+        private const string CountThree = "3";
+        private const string CountTwo = "2";
+        private const string CountOne = "1";
+        private const string StartMessage = "Поехали";
+
         [SerializeField] private Level _level;
         [SerializeField] private ScoreView _scoreView;
 
         private float _startTime;
         private bool _isRunning;
         private bool _isFinished;
+        private WaitForSeconds _countStep;
+        private Coroutine _countdown;
+
+        private void Awake()
+        {
+            _countStep = new WaitForSeconds(CountStepDuration);
+        }
 
         private void Start()
         {
-            _startTime = Time.time;
-            _isRunning = true;
+            _isRunning = false;
             _isFinished = false;
-            ShowElapsed();
+            _scoreView.SetTime(0f);
+            _countdown = StartCoroutine(Countdown());
         }
 
         private void Update()
@@ -31,8 +45,15 @@ namespace SlipUp
 
         private void OnDestroy()
         {
+            if (_countdown != null)
+            {
+                StopCoroutine(_countdown);
+                _countdown = null;
+            }
+
             _level = null;
             _scoreView = null;
+            _countStep = null;
         }
 
         private void OnTriggerEnter(Collider other)
@@ -62,6 +83,34 @@ namespace SlipUp
         private void ShowElapsed()
         {
             _scoreView.SetTime(Time.time - _startTime);
+        }
+
+        private IEnumerator Countdown()
+        {
+            _scoreView.SetMessage(CountThree);
+            yield return _countStep;
+            _scoreView.SetMessage(CountTwo);
+            yield return _countStep;
+            _scoreView.SetMessage(CountOne);
+            yield return _countStep;
+            _scoreView.SetMessage(StartMessage);
+            BeginRun();
+            yield return _countStep;
+            _scoreView.SetMessage(string.Empty);
+            _countdown = null;
+        }
+
+        private void BeginRun()
+        {
+            if (_isFinished)
+            {
+                return;
+            }
+
+            _startTime = Time.time;
+            _isRunning = true;
+            _level.BeginRun();
+            ShowElapsed();
         }
     }
 }

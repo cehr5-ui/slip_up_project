@@ -30,6 +30,10 @@ namespace SlipUp
         private float _dashSpeed;
         private float _bounceTimeLeft;
         private Vector3 _bounceVelocity;
+        private bool _isRunStarted;
+        private bool _isFrozen;
+
+        internal bool IsControlEnabled => _isRunStarted && _isFrozen == false;
 
         internal void Initialize(Level level)
         {
@@ -54,6 +58,14 @@ namespace SlipUp
 
         private void Update()
         {
+            if (IsControlEnabled == false)
+            {
+                _planarInput = Vector3.zero;
+                _isJumpRequested = false;
+                _isDashRequested = false;
+                return;
+            }
+
             _planarInput = ReadPlanarInput();
 
             if (Input.GetKeyDown(KeyCode.F))
@@ -71,6 +83,11 @@ namespace SlipUp
 
         private void FixedUpdate()
         {
+            if (_isFrozen)
+            {
+                return;
+            }
+
             if (_bounceTimeLeft > 0f)
             {
                 _bounceTimeLeft -= Time.fixedDeltaTime;
@@ -146,6 +163,34 @@ namespace SlipUp
             _bounceVelocity = velocity;
             _bounceTimeLeft = _bounceDuration;
             _rigidbody.linearVelocity = velocity;
+        }
+
+        internal void BeginRun()
+        {
+            _isRunStarted = true;
+        }
+
+        internal void Freeze()
+        {
+            _isFrozen = true;
+            _planarInput = Vector3.zero;
+            _isJumpRequested = false;
+            _isDashRequested = false;
+            _isDashing = false;
+            _dashDistanceLeft = 0f;
+            _bounceTimeLeft = 0f;
+            _rigidbody.linearVelocity = Vector3.zero;
+            _rigidbody.angularVelocity = Vector3.zero;
+            _rigidbody.isKinematic = true;
+        }
+
+        internal void Release()
+        {
+            _rigidbody.isKinematic = false;
+            _rigidbody.linearVelocity = Vector3.zero;
+            _rigidbody.angularVelocity = Vector3.zero;
+            _rigidbody.WakeUp();
+            _isFrozen = false;
         }
 
         private Vector3 ReadPlanarInput()

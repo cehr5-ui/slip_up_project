@@ -1,72 +1,86 @@
+using System.Collections;
 using UnityEngine;
 
 namespace SlipUp
 {
     public class PlayerRespawn : MonoBehaviour
     {
+        private const float FreezeDuration = 1f;
+
         [SerializeField] private Rigidbody _rigidbody;
         [SerializeField] private PlayerCollector _collector;
 
         private Level _level;
-        private Vector3 _startPosition;
         private bool _isReturning;
-        private bool _hasRespawnedCoins;
+        private WaitForSeconds _freezeDelay;
+        private WaitForFixedUpdate _physicsStep;
+        private Coroutine _return;
 
         private bool IsOutsideLocation => _level.IsBelowArena(_rigidbody.position);
 
         internal void Initialize(Level level)
         {
             _level = level;
+            TeleportToStart();
         }
 
         private void Awake()
         {
-            _startPosition = _rigidbody.position;
+            _freezeDelay = new WaitForSeconds(FreezeDuration);
+            _physicsStep = new WaitForFixedUpdate();
         }
 
         private void OnDestroy()
         {
+            if (_return != null)
+            {
+                StopCoroutine(_return);
+                _return = null;
+            }
+
             _level = null;
+            _freezeDelay = null;
+            _physicsStep = null;
         }
 
         private void FixedUpdate()
         {
-            if (IsOutsideLocation)
-            {
-                if (_isReturning)
-                {
-                    return;
-                }
-
-                TeleportToStart();
-                _collector.ResetScore();
-                _collector.PauseCollection();
-                _isReturning = true;
-                _hasRespawnedCoins = false;
-                return;
-            }
-
-            if (_isReturning == false)
+            if (IsOutsideLocation == false)
             {
                 return;
             }
 
-            if (_hasRespawnedCoins == false)
+            if (_isReturning)
             {
-                _level.RespawnCoins();
-                _hasRespawnedCoins = true;
                 return;
             }
 
+            _isReturning = true;
+            _return = StartCoroutine(ReturnToStart());
+        }
+
+        private IEnumerator ReturnToStart()
+        {
+            _collector.ResetScore();
+            _collector.PauseCollection();
+            TeleportToStart();
+            _level.FreezePlayer();
+            yield return _freezeDelay;
+            yield return _physicsStep;
+            _level.RespawnCoins();
+            yield return _physicsStep;
             _collector.ResumeCollection();
+            _level.ReleasePlayer();
             _isReturning = false;
+            _return = null;
         }
 
         private void TeleportToStart()
         {
+            _rigidbody.position = _level.StartPosition;
+            _rigidbody.rotation = _level.StartRotation;
             _rigidbody.linearVelocity = Vector3.zero;
             _rigidbody.angularVelocity = Vector3.zero;
-            _rigidbody.position = _startPosition;
         }
     }
 }
