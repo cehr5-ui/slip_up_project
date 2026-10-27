@@ -12,7 +12,7 @@ namespace SlipUp
         [SerializeField] private Collider _location;
         [SerializeField] private Transform _spawnPoint;
         [SerializeField] private CoinSpawner[] _coinSpawners;
-        [SerializeField] private float _outsideMargin = 20f;
+        [SerializeField] private float _outsideMargin = 0.5f;
 
         private static Level _instance;
 
@@ -64,6 +64,11 @@ namespace SlipUp
             _scoreView.SetScore(score);
         }
 
+        internal void ShowDash(bool isReady, float cooldownLeft)
+        {
+            _scoreView.SetDash(isReady, cooldownLeft);
+        }
+
         internal void RespawnCoins()
         {
             for (int i = 0; i < _coinSpawners.Length; i++)
@@ -74,9 +79,7 @@ namespace SlipUp
 
         internal bool IsBelowArena(Vector3 position)
         {
-            Bounds bounds = _location.bounds;
-            bounds.Expand(_outsideMargin);
-            return position.y < bounds.min.y;
+            return position.y < _location.bounds.min.y - _outsideMargin;
         }
 
         internal bool IsPlayer(GameObject target)

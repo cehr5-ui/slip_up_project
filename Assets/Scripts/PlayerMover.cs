@@ -15,6 +15,7 @@ namespace SlipUp
         [SerializeField] private float _jumpSpeed = 7f;
         [SerializeField] private float _maxFallSpeed = 40f;
         [SerializeField] private float _dashDistance = 5f;
+        [SerializeField] private float _dashCooldown = 2f;
         [SerializeField] private float _bounceDuration = 0.15f;
         [SerializeField] private PlayerCollector _collector;
 
@@ -24,8 +25,8 @@ namespace SlipUp
         private bool _isJumpRequested;
         private bool _isDashRequested;
         private bool _isDashing;
-        private bool _hasDashed;
         private bool _isGrounded;
+        private float _dashCooldownLeft;
         private float _dashDistanceLeft;
         private float _dashSpeed;
         private float _bounceTimeLeft;
@@ -34,6 +35,8 @@ namespace SlipUp
         private bool _isFrozen;
 
         internal bool IsControlEnabled => _isRunStarted && _isFrozen == false;
+
+        private bool IsDashReady => _dashCooldownLeft <= 0f;
 
         internal void Initialize(Level level)
         {
@@ -58,6 +61,18 @@ namespace SlipUp
 
         private void Update()
         {
+            if (_dashCooldownLeft > 0f)
+            {
+                _dashCooldownLeft -= Time.deltaTime;
+
+                if (_dashCooldownLeft < 0f)
+                {
+                    _dashCooldownLeft = 0f;
+                }
+            }
+
+            _level.ShowDash(IsDashReady, _dashCooldownLeft);
+
             if (IsControlEnabled == false)
             {
                 _planarInput = Vector3.zero;
@@ -112,9 +127,7 @@ namespace SlipUp
                 return;
             }
 
-            Vector3 forward = Vector3.ProjectOnPlane(_level.CameraTransform.forward, Vector3.up).normalized;
-            Vector3 right = Vector3.ProjectOnPlane(_level.CameraTransform.right, Vector3.up).normalized;
-            Vector3 wishDirection = forward * _planarInput.z + right * _planarInput.x;
+            Vector3 wishDirection = GetWishDirection();
             Vector3 targetVelocity = wishDirection * maxSpeed;
 
             Vector3 currentVelocity = _rigidbody.linearVelocity;
@@ -150,7 +163,6 @@ namespace SlipUp
                 if (normal.y > GroundNormalY)
                 {
                     _isGrounded = true;
-                    _hasDashed = false;
                 }
             }
         }
@@ -238,26 +250,38 @@ namespace SlipUp
 
         private void TryStartDash(float maxSpeed)
         {
-            if (_isGrounded || _hasDashed)
+            if (IsDashReady == false)
             {
                 return;
             }
 
             Vector3 velocity = _rigidbody.linearVelocity;
-            Vector3 planarVelocity = new Vector3(velocity.x, 0f, velocity.z);
+            Vector3 direction = new Vector3(velocity.x, 0f, velocity.z);
 
-            if (planarVelocity.sqrMagnitude <= 0.01f)
+            if (direction.sqrMagnitude <= 0.01f)
+            {
+                direction = GetWishDirection();
+            }
+
+            if (direction.sqrMagnitude <= 0.01f)
             {
                 return;
             }
 
             velocity.y = 0f;
             _rigidbody.linearVelocity = velocity;
-            _dashDirection = planarVelocity.normalized;
+            _dashDirection = direction.normalized;
             _dashSpeed = maxSpeed * DashSpeedMultiplier;
             _dashDistanceLeft = _dashDistance;
             _isDashing = true;
-            _hasDashed = true;
+            _dashCooldownLeft = _dashCooldown;
+        }
+
+        private Vector3 GetWishDirection()
+        {
+            Vector3 forward = Vector3.ProjectOnPlane(_level.CameraTransform.forward, Vector3.up).normalized;
+            Vector3 right = Vector3.ProjectOnPlane(_level.CameraTransform.right, Vector3.up).normalized;
+            return forward * _planarInput.z + right * _planarInput.x;
         }
 
         private void ApplyDash()
@@ -266,8 +290,7 @@ namespace SlipUp
 
             if (step >= _dashDistanceLeft)
             {
-                float endSpeed = _dashDistanceLeft / Time.fixedDeltaTime;
-                _rigidbody.linearVelocity = new Vector3(_dashDirection.x * endSpeed, 0f, _dashDirection.z * endSpeed);
+                _rigidbody.linearVelocity = new Vector3(_dashDirection.x * _dashSpeed, 0f, _dashDirection.z * _dashSpeed);
                 _dashDistanceLeft = 0f;
                 _isDashing = false;
                 return;
