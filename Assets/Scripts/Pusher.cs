@@ -13,6 +13,11 @@ namespace SlipUp
             _level = level;
         }
 
+        private void Start()
+        {
+            Level.Connect(this);
+        }
+
         private void OnDestroy()
         {
             _level = null;

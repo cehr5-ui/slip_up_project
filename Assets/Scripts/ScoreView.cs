@@ -6,25 +6,19 @@ namespace SlipUp
     public class ScoreView : MonoBehaviour
     {
         private const string ScoreFormat = "Монеты: {0}";
-        private const string ClearedText = "Арена зачищена";
+        private const string TimeFormat = "Время: {0:0.00}";
 
         [SerializeField] private TextMeshProUGUI _label;
-        [SerializeField] private TextMeshProUGUI _clearedLabel;
-
-        private void Awake()
-        {
-            _clearedLabel.text = ClearedText;
-            _clearedLabel.gameObject.SetActive(false);
-        }
+        [SerializeField] private TextMeshProUGUI _timeLabel;
 
         public void SetScore(int score)
         {
             _label.text = string.Format(ScoreFormat, score);
         }
 
-        public void SetCleared(bool isCleared)
+        internal void SetTime(float time)
         {
-            _clearedLabel.gameObject.SetActive(isCleared);
+            _timeLabel.text = string.Format(TimeFormat, time);
         }
     }
 }

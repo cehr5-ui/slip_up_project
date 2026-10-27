@@ -9,37 +9,29 @@ namespace SlipUp
         [SerializeField] private ScoreView _scoreView;
         [SerializeField] private Collider _location;
         [SerializeField] private CoinSpawner[] _coinSpawners;
-        [SerializeField] private Pusher[] _pushers;
         [SerializeField] private float _outsideMargin = 20f;
+
+        private static Level _instance;
 
         internal Transform CameraTransform => _camera.transform;
 
         internal Transform PlayerFocus => _player.Focus;
 
-        private int CoinCount
-        {
-            get
-            {
-                int coinCount = 0;
-
-                for (int i = 0; i < _coinSpawners.Length; i++)
-                {
-                    coinCount += _coinSpawners[i].CoinCount;
-                }
-
-                return coinCount;
-            }
-        }
-
         private void Awake()
         {
+            _instance = this;
             _player.Initialize(this);
             _camera.Initialize(this);
+        }
 
-            for (int i = 0; i < _pushers.Length; i++)
-            {
-                _pushers[i].Initialize(this);
-            }
+        private void OnDestroy()
+        {
+            _instance = null;
+        }
+
+        internal static void Connect(Pusher pusher)
+        {
+            pusher.Initialize(_instance);
         }
 
         internal bool TryTakeCoin(Collider other)
@@ -56,7 +48,6 @@ namespace SlipUp
         internal void ShowScore(int score)
         {
             _scoreView.SetScore(score);
-            _scoreView.SetCleared(CoinCount > 0 && score >= CoinCount);
         }
 
         internal void RespawnCoins()
