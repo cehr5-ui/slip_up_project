@@ -1,3 +1,4 @@
+using DG.Tweening;
 using UnityEngine;
 
 namespace SlipUp
@@ -5,12 +6,33 @@ namespace SlipUp
     public class Pusher : MonoBehaviour
     {
         [SerializeField] private float _upwardBounce = 0.5f;
+        [SerializeField] private float _hitPunchStrength = 0.2f;
+        [SerializeField] private float _hitPunchDuration = 0.25f;
 
         private Level _level;
+        private Vector3 _scale;
+        private Tween _hitPunch;
 
         internal void Initialize(Level level)
         {
             _level = level;
+        }
+
+        private void Awake()
+        {
+            _scale = transform.localScale;
+        }
+
+        protected void OnDisable()
+        {
+            if (_hitPunch == null)
+            {
+                return;
+            }
+
+            _hitPunch.Kill();
+            _hitPunch = null;
+            transform.localScale = _scale;
         }
 
         private void Start()
@@ -36,6 +58,19 @@ namespace SlipUp
             }
 
             _level.BouncePlayer(bounceVelocity);
+            PlayHit();
+        }
+
+        private void PlayHit()
+        {
+            if (_hitPunch != null)
+            {
+                _hitPunch.Kill();
+                _hitPunch = null;
+            }
+
+            transform.localScale = _scale;
+            _hitPunch = transform.DOPunchScale(Vector3.one * _hitPunchStrength, _hitPunchDuration, 1, 0.5f);
         }
 
         private bool TryGetBounceVelocity(Collision collision, out Vector3 bounceVelocity)

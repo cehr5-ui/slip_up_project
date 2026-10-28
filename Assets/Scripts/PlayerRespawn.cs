@@ -22,6 +22,7 @@ namespace SlipUp
         {
             _level = level;
             TeleportToStart();
+            _rigidbody.interpolation = RigidbodyInterpolation.Interpolate;
         }
 
         private void Awake()
@@ -63,8 +64,9 @@ namespace SlipUp
         {
             _collector.ResetScore();
             _collector.PauseCollection();
-            TeleportToStart();
             _level.FreezePlayer();
+            TeleportToStart();
+            _level.LockCameraToPlayer();
             yield return _freezeDelay;
             yield return _physicsStep;
             _level.RespawnCoins();
@@ -77,10 +79,14 @@ namespace SlipUp
 
         private void TeleportToStart()
         {
-            _rigidbody.position = _level.StartPosition;
-            _rigidbody.rotation = _level.StartRotation;
+            Vector3 position = _level.StartPosition;
+            Quaternion rotation = _level.StartRotation;
+            _rigidbody.interpolation = RigidbodyInterpolation.None;
             _rigidbody.linearVelocity = Vector3.zero;
             _rigidbody.angularVelocity = Vector3.zero;
+            _rigidbody.position = position;
+            _rigidbody.rotation = rotation;
+            _rigidbody.transform.SetPositionAndRotation(position, rotation);
         }
     }
 }

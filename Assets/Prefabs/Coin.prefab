@@ -154,4 +154,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _visual: {fileID: 924637937175338883}
+  _collider: {fileID: 1072052791496249458}
   _degreesPerSecond: 180
+  _collectDuration: 0.2

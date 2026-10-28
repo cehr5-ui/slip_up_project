@@ -1,3 +1,4 @@
+using DG.Tweening;
 using UnityEngine;
 
 namespace SlipUp
@@ -9,19 +10,29 @@ namespace SlipUp
         [SerializeField] private Transform _pointB;
         [SerializeField] private float _travelDuration = 2.5f;
 
-        private float _travelTime;
+        private Tween _move;
 
         private void OnEnable()
         {
-            _travelTime = 0f;
+            _rigidbody.position = _pointA.position;
+            _move = _rigidbody
+                .DOMove(_pointB.position, _travelDuration)
+                .SetEase(Ease.Linear)
+                .SetLoops(-1, LoopType.Yoyo)
+                .SetUpdate(UpdateType.Fixed);
         }
 
-        private void Update()
+        private void OnDisable()
         {
-            float progress = Mathf.PingPong(_travelTime / _travelDuration, 1f);
-            Vector3 position = Vector3.Lerp(_pointA.position, _pointB.position, progress);
-            _rigidbody.MovePosition(position);
-            _travelTime += Time.deltaTime;
+            base.OnDisable();
+
+            if (_move == null)
+            {
+                return;
+            }
+
+            _move.Kill();
+            _move = null;
         }
 
         private void OnDrawGizmos()

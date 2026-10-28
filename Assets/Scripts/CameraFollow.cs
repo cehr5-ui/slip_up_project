@@ -24,6 +24,7 @@ namespace SlipUp
         private Vector3 _pivotPosition;
         private bool _hasPivot;
         private bool _isLookEnabled;
+        private bool _isLockedToPlayer;
 
         private Transform PlayerFocus => _level.PlayerFocus;
 
@@ -58,25 +59,32 @@ namespace SlipUp
 
             Quaternion orbitRotation = Quaternion.Euler(_pitch, _yaw, 0f);
 
-            if (_hasPivot == false)
+            if (_hasPivot == false || _useSmoothing == false || _isLockedToPlayer)
             {
                 _pivotPosition = playerFocus.position;
                 _hasPivot = true;
             }
-
-            if (_useSmoothing)
+            else
             {
                 float t = 1f - Mathf.Exp(-_followSpeed * Time.deltaTime);
                 _pivotPosition = Vector3.Lerp(_pivotPosition, playerFocus.position, t);
-            }
-            else
-            {
-                _pivotPosition = playerFocus.position;
             }
 
             Vector3 desiredPosition = _pivotPosition + orbitRotation * _offset;
             transform.position = KeepOutOfSurfaces(desiredPosition);
             transform.LookAt(playerFocus.position);
+        }
+
+        internal void LockToPlayer()
+        {
+            _pivotPosition = PlayerFocus.position;
+            _hasPivot = true;
+            _isLockedToPlayer = true;
+        }
+
+        internal void UnlockFollow()
+        {
+            _isLockedToPlayer = false;
         }
 
         internal void SetLookEnabled(bool isEnabled)

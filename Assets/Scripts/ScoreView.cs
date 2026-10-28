@@ -1,3 +1,4 @@
+using DG.Tweening;
 using TMPro;
 using UnityEngine;
 
@@ -17,10 +18,42 @@ namespace SlipUp
         [SerializeField] private TextMeshProUGUI _timeLabel;
         [SerializeField] private TextMeshProUGUI _messageLabel;
         [SerializeField] private TextMeshProUGUI _dashLabel;
+        [SerializeField] private float _punchStrength = 0.3f;
+        [SerializeField] private float _punchDuration = 0.35f;
+
+        private RectTransform _labelTransform;
+        private Vector3 _labelScale;
+        private Tween _punch;
+
+        private void Awake()
+        {
+            _labelTransform = _label.rectTransform;
+            _labelScale = _labelTransform.localScale;
+        }
+
+        private void OnDisable()
+        {
+            if (_punch != null)
+            {
+                _punch.Kill();
+                _punch = null;
+            }
+
+            _labelTransform.localScale = _labelScale;
+        }
 
         public void SetScore(int score)
         {
             _label.text = string.Format(ScoreFormat, score);
+
+            if (_punch != null)
+            {
+                _punch.Kill();
+                _punch = null;
+            }
+
+            _labelTransform.localScale = _labelScale;
+            _punch = _labelTransform.DOPunchScale(new Vector3(_punchStrength, _punchStrength, 0f), _punchDuration);
         }
 
         internal void SetTime(float time)

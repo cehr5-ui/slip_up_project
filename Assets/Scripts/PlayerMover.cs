@@ -5,10 +5,13 @@ namespace SlipUp
     public class PlayerMover : MonoBehaviour
     {
         private const float GroundNormalY = 0.5f;
+        private const float GroundProbeSkin = 0.05f;
+        private const float GroundedMaxRiseSpeed = 0.1f;
         private const float SpeedPerCoin = 0.02f;
         private const float DashSpeedMultiplier = 3f;
 
         [SerializeField] private Rigidbody _rigidbody;
+        [SerializeField] private CapsuleCollider _capsule;
         [SerializeField] private float _moveSpeed = 6f;
         [SerializeField] private float _acceleration = 20f;
         [SerializeField] private float _deceleration = 30f;
@@ -17,6 +20,8 @@ namespace SlipUp
         [SerializeField] private float _dashDistance = 5f;
         [SerializeField] private float _dashCooldown = 2f;
         [SerializeField] private float _bounceDuration = 0.15f;
+        [SerializeField] private float _groundCheckDistance = 0.2f;
+        [SerializeField] private float _coyoteDuration = 0.15f;
         [SerializeField] private PlayerCollector _collector;
 
         private Level _level;
@@ -26,6 +31,8 @@ namespace SlipUp
         private bool _isDashRequested;
         private bool _isDashing;
         private bool _isGrounded;
+        private bool _hasAirJump;
+        private float _coyoteTimeLeft;
         private float _dashCooldownLeft;
         private float _dashDistanceLeft;
         private float _dashSpeed;
@@ -33,10 +40,37 @@ namespace SlipUp
         private Vector3 _bounceVelocity;
         private bool _isRunStarted;
         private bool _isFrozen;
+        private readonly RaycastHit[] _groundHits = new RaycastHit[8];
 
         internal bool IsControlEnabled => _isRunStarted && _isFrozen == false;
 
         private bool IsDashReady => _dashCooldownLeft <= 0f;
+
+        private bool IsTouchingGround
+        {
+            get
+            {
+                Vector3 bottom = _rigidbody.position + Vector3.up * (_capsule.center.y - _capsule.height * 0.5f);
+                Vector3 origin = bottom + Vector3.up * GroundProbeSkin;
+                float distance = GroundProbeSkin + _groundCheckDistance;
+                int hitCount = Physics.RaycastNonAlloc(origin, Vector3.down, _groundHits, distance, Physics.DefaultRaycastLayers, QueryTriggerInteraction.Ignore);
+
+                for (int i = 0; i < hitCount; i++)
+                {
+                    if (_groundHits[i].collider == _capsule)
+                    {
+                        continue;
+                    }
+
+                    if (_groundHits[i].normal.y > GroundNormalY)
+                    {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+        }
 
         internal void Initialize(Level level)
         {
@@ -103,11 +137,12 @@ namespace SlipUp
                 return;
             }
 
+            RefreshGround();
+
             if (_bounceTimeLeft > 0f)
             {
                 _bounceTimeLeft -= Time.fixedDeltaTime;
                 _rigidbody.linearVelocity = _bounceVelocity;
-                ClearGrounded();
                 return;
             }
 
@@ -123,7 +158,6 @@ namespace SlipUp
             if (_isDashing)
             {
                 ApplyDash();
-                ClearGrounded();
                 return;
             }
 
@@ -151,20 +185,6 @@ namespace SlipUp
 
             _rigidbody.linearVelocity = new Vector3(nextPlanarVelocity.x, verticalSpeed, nextPlanarVelocity.z);
             ApplyJump();
-            ClearGrounded();
-        }
-
-        private void OnCollisionStay(Collision collision)
-        {
-            for (int i = 0; i < collision.contactCount; i++)
-            {
-                Vector3 normal = collision.GetContact(i).normal;
-
-                if (normal.y > GroundNormalY)
-                {
-                    _isGrounded = true;
-                }
-            }
         }
 
         internal void Bounce(Vector3 velocity)
@@ -191,6 +211,9 @@ namespace SlipUp
             _isDashing = false;
             _dashDistanceLeft = 0f;
             _bounceTimeLeft = 0f;
+            _isGrounded = false;
+            _hasAirJump = false;
+            _coyoteTimeLeft = 0f;
             _rigidbody.linearVelocity = Vector3.zero;
             _rigidbody.angularVelocity = Vector3.zero;
             _rigidbody.isKinematic = true;
@@ -199,6 +222,7 @@ namespace SlipUp
         internal void Release()
         {
             _rigidbody.isKinematic = false;
+            _rigidbody.interpolation = RigidbodyInterpolation.Interpolate;
             _rigidbody.linearVelocity = Vector3.zero;
             _rigidbody.angularVelocity = Vector3.zero;
             _rigidbody.WakeUp();
@@ -219,14 +243,29 @@ namespace SlipUp
             return inputDirection;
         }
 
-        private void ClearGrounded()
+        private void RefreshGround()
         {
-            if (_rigidbody.IsSleeping())
+            if (IsTouchingGround && _rigidbody.linearVelocity.y <= GroundedMaxRiseSpeed)
             {
+                _isGrounded = true;
+                _coyoteTimeLeft = _coyoteDuration;
+                _hasAirJump = true;
                 return;
             }
 
             _isGrounded = false;
+
+            if (_coyoteTimeLeft <= 0f)
+            {
+                return;
+            }
+
+            _coyoteTimeLeft -= Time.fixedDeltaTime;
+
+            if (_coyoteTimeLeft < 0f)
+            {
+                _coyoteTimeLeft = 0f;
+            }
         }
 
         private void ApplyJump()
@@ -238,11 +277,25 @@ namespace SlipUp
 
             _isJumpRequested = false;
 
-            if (_isGrounded == false)
+            if (_isGrounded || _coyoteTimeLeft > 0f)
+            {
+                _coyoteTimeLeft = 0f;
+                _isGrounded = false;
+                SetJumpVelocity();
+                return;
+            }
+
+            if (_hasAirJump == false)
             {
                 return;
             }
 
+            _hasAirJump = false;
+            SetJumpVelocity();
+        }
+
+        private void SetJumpVelocity()
+        {
             Vector3 velocity = _rigidbody.linearVelocity;
             velocity.y = _jumpSpeed;
             _rigidbody.linearVelocity = velocity;

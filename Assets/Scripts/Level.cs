@@ -12,7 +12,7 @@ namespace SlipUp
         [SerializeField] private Collider _location;
         [SerializeField] private Transform _spawnPoint;
         [SerializeField] private CoinSpawner[] _coinSpawners;
-        [SerializeField] private float _outsideMargin = 0.5f;
+        [SerializeField] private float _outsideMargin = 8f;
 
         private static Level _instance;
 
@@ -50,13 +50,12 @@ namespace SlipUp
 
         internal bool TryTakeCoin(Collider other)
         {
-            if (other.TryGetComponent(out CoinSpin _) == false)
+            if (other.TryGetComponent(out CoinSpin coin) == false)
             {
                 return false;
             }
 
-            Destroy(other.gameObject);
-            return true;
+            return coin.TryCollect();
         }
 
         internal void ShowScore(int score)
@@ -104,9 +103,15 @@ namespace SlipUp
             _camera.SetLookEnabled(false);
         }
 
+        internal void LockCameraToPlayer()
+        {
+            _camera.LockToPlayer();
+        }
+
         internal void ReleasePlayer()
         {
             _player.Release();
+            _camera.UnlockFollow();
             _camera.SetLookEnabled(_player.IsControlEnabled);
         }
     }
