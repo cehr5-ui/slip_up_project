@@ -27,6 +27,26 @@ namespace SlipUp
             _audio.PlayHit();
         }
 
+        internal void ResetScore()
+        {
+            _collector.ResetScore();
+        }
+
+        internal void PauseCollection()
+        {
+            _collector.PauseCollection();
+        }
+
+        internal void ResumeCollection()
+        {
+            _collector.ResumeCollection();
+        }
+
+        internal void TeleportToStart()
+        {
+            _respawn.TeleportToStart();
+        }
+
         internal void BeginRun()
         {
             _mover.BeginRun();

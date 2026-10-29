@@ -12,6 +12,7 @@ namespace SlipUp
         [SerializeField] private Collider _location;
         [SerializeField] private Transform _spawnPoint;
         [SerializeField] private CoinSpawner[] _coinSpawners;
+        [SerializeField] private RunFlow _runFlow;
         [SerializeField] private float _outsideMargin = 8f;
 
         private static Level _instance;
@@ -34,6 +35,7 @@ namespace SlipUp
         private void OnDestroy()
         {
             _instance = null;
+            _runFlow = null;
             _spawnPoint = null;
         }
 
@@ -89,6 +91,33 @@ namespace SlipUp
         internal void BouncePlayer(Vector3 velocity)
         {
             _player.Bounce(velocity);
+        }
+
+        internal void NotifyFell()
+        {
+            _runFlow.OnFell();
+        }
+
+        internal void PrepareAttempt()
+        {
+            _player.PauseCollection();
+            _player.ResetScore();
+            FreezePlayer();
+            _player.TeleportToStart();
+            RespawnCoins();
+            LockCameraToPlayer();
+        }
+
+        internal void BeginAttempt()
+        {
+            _player.ResumeCollection();
+            BeginRun();
+            ReleasePlayer();
+        }
+
+        internal void PauseCollection()
+        {
+            _player.PauseCollection();
         }
 
         internal void BeginRun()

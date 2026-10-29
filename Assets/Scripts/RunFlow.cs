@@ -13,24 +13,94 @@ namespace SlipUp
 
         [SerializeField] private Level _level;
         [SerializeField] private ScoreView _scoreView;
+        [SerializeField] private ScreenService _screens;
+        [SerializeField] private MainMenuView _menu;
+        [SerializeField] private ResultView _result;
 
         private float _startTime;
+        private float _bestTime;
+        private bool _hasBestTime;
         private bool _isRunning;
         private bool _isFinished;
         private WaitForSeconds _countStep;
         private Coroutine _countdown;
 
+        internal void Play()
+        {
+            if (_countdown != null)
+            {
+                return;
+            }
+
+            if (_isRunning)
+            {
+                return;
+            }
+
+            _isFinished = false;
+            _isRunning = false;
+            _screens.Show(ScreenService.ScreenId.Hud);
+            _level.PrepareAttempt();
+            _scoreView.SetTime(0f);
+            _scoreView.SetMessage(string.Empty);
+            _countdown = StartCoroutine(Countdown());
+        }
+
+        internal void OpenMenu()
+        {
+            if (_countdown != null)
+            {
+                StopCoroutine(_countdown);
+                _countdown = null;
+            }
+
+            _isRunning = false;
+            _isFinished = false;
+            _level.PrepareAttempt();
+            _scoreView.SetTime(0f);
+            _scoreView.SetMessage(string.Empty);
+            _screens.Show(ScreenService.ScreenId.Menu);
+        }
+
+        internal void OnFell()
+        {
+            if (_isFinished)
+            {
+                return;
+            }
+
+            if (_isRunning == false)
+            {
+                return;
+            }
+
+            _isFinished = true;
+            _isRunning = false;
+            float time = Time.time - _startTime;
+            _scoreView.SetTime(time);
+            _level.FreezePlayer();
+            _level.PauseCollection();
+            _result.ShowFall(time, _hasBestTime, _bestTime);
+            _screens.Show(ScreenService.ScreenId.Result);
+        }
+
         private void Awake()
         {
             _countStep = new WaitForSeconds(CountStepDuration);
+            _menu.Initialize(this);
+            _result.Initialize(this);
         }
 
         private void Start()
         {
             _isRunning = false;
             _isFinished = false;
+            _level.FreezePlayer();
+            _level.LockCameraToPlayer();
+            _level.PauseCollection();
             _scoreView.SetTime(0f);
-            _countdown = StartCoroutine(Countdown());
+            _scoreView.SetMessage(string.Empty);
+            _screens.Show(ScreenService.ScreenId.Menu);
         }
 
         private void Update()
@@ -53,12 +123,20 @@ namespace SlipUp
 
             _level = null;
             _scoreView = null;
+            _screens = null;
+            _menu = null;
+            _result = null;
             _countStep = null;
         }
 
         private void OnTriggerEnter(Collider other)
         {
             if (_isFinished)
+            {
+                return;
+            }
+
+            if (_isRunning == false)
             {
                 return;
             }
@@ -70,7 +148,13 @@ namespace SlipUp
 
             _isFinished = true;
             _isRunning = false;
-            ShowElapsed();
+            float time = Time.time - _startTime;
+            _scoreView.SetTime(time);
+            RememberBest(time);
+            _level.FreezePlayer();
+            _level.PauseCollection();
+            _result.ShowFinish(time, _hasBestTime, _bestTime);
+            _screens.Show(ScreenService.ScreenId.Result);
         }
 
         private void OnDrawGizmos()
@@ -85,6 +169,17 @@ namespace SlipUp
             _scoreView.SetTime(Time.time - _startTime);
         }
 
+        private void RememberBest(float time)
+        {
+            if (_hasBestTime && time >= _bestTime)
+            {
+                return;
+            }
+
+            _bestTime = time;
+            _hasBestTime = true;
+        }
+
         private IEnumerator Countdown()
         {
             _scoreView.SetMessage(CountThree);
@@ -94,13 +189,13 @@ namespace SlipUp
             _scoreView.SetMessage(CountOne);
             yield return _countStep;
             _scoreView.SetMessage(StartMessage);
-            BeginRun();
+            StartRunning();
             yield return _countStep;
             _scoreView.SetMessage(string.Empty);
             _countdown = null;
         }
 
-        private void BeginRun()
+        private void StartRunning()
         {
             if (_isFinished)
             {
@@ -109,7 +204,7 @@ namespace SlipUp
 
             _startTime = Time.time;
             _isRunning = true;
-            _level.BeginRun();
+            _level.BeginAttempt();
             ShowElapsed();
         }
     }

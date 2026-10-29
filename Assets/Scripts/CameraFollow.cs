@@ -47,14 +47,19 @@ namespace SlipUp
         private void LateUpdate()
         {
             Transform playerFocus = PlayerFocus;
-            Cursor.lockState = CursorLockMode.Locked;
-            Cursor.visible = false;
 
             if (_isLookEnabled)
             {
+                Cursor.lockState = CursorLockMode.Locked;
+                Cursor.visible = false;
                 _yaw += Input.GetAxis("Mouse X") * _yawSpeed;
                 _pitch += Input.GetAxis("Mouse Y") * _pitchSpeed;
                 _pitch = Mathf.Clamp(_pitch, _minPitch, _maxPitch);
+            }
+            else
+            {
+                Cursor.lockState = CursorLockMode.None;
+                Cursor.visible = true;
             }
 
             Quaternion orbitRotation = Quaternion.Euler(_pitch, _yaw, 0f);

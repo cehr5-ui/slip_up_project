@@ -1,20 +1,13 @@
-using System.Collections;
 using UnityEngine;
 
 namespace SlipUp
 {
     public class PlayerRespawn : MonoBehaviour
     {
-        private const float FreezeDuration = 1f;
-
         [SerializeField] private Rigidbody _rigidbody;
-        [SerializeField] private PlayerCollector _collector;
 
         private Level _level;
-        private bool _isReturning;
-        private WaitForSeconds _freezeDelay;
-        private WaitForFixedUpdate _physicsStep;
-        private Coroutine _return;
+        private bool _isReported;
 
         private bool IsOutsideLocation => _level.IsBelowArena(_rigidbody.position);
 
@@ -25,68 +18,44 @@ namespace SlipUp
             _rigidbody.interpolation = RigidbodyInterpolation.Interpolate;
         }
 
-        private void Awake()
-        {
-            _freezeDelay = new WaitForSeconds(FreezeDuration);
-            _physicsStep = new WaitForFixedUpdate();
-        }
-
         private void OnDestroy()
         {
-            if (_return != null)
-            {
-                StopCoroutine(_return);
-                _return = null;
-            }
-
             _level = null;
-            _freezeDelay = null;
-            _physicsStep = null;
         }
 
         private void FixedUpdate()
         {
+            if (_isReported)
+            {
+                return;
+            }
+
             if (IsOutsideLocation == false)
             {
                 return;
             }
 
-            if (_isReturning)
+            _isReported = true;
+            _level.NotifyFell();
+        }
+
+        internal void TeleportToStart()
+        {
+            _isReported = false;
+            Vector3 position = _level.StartPosition;
+            Quaternion rotation = _level.StartRotation;
+            _rigidbody.interpolation = RigidbodyInterpolation.None;
+            _rigidbody.position = position;
+            _rigidbody.rotation = rotation;
+            _rigidbody.transform.SetPositionAndRotation(position, rotation);
+
+            if (_rigidbody.isKinematic)
             {
                 return;
             }
 
-            _isReturning = true;
-            _return = StartCoroutine(ReturnToStart());
-        }
-
-        private IEnumerator ReturnToStart()
-        {
-            _collector.ResetScore();
-            _collector.PauseCollection();
-            _level.FreezePlayer();
-            TeleportToStart();
-            _level.LockCameraToPlayer();
-            yield return _freezeDelay;
-            yield return _physicsStep;
-            _level.RespawnCoins();
-            yield return _physicsStep;
-            _collector.ResumeCollection();
-            _level.ReleasePlayer();
-            _isReturning = false;
-            _return = null;
-        }
-
-        private void TeleportToStart()
-        {
-            Vector3 position = _level.StartPosition;
-            Quaternion rotation = _level.StartRotation;
-            _rigidbody.interpolation = RigidbodyInterpolation.None;
             _rigidbody.linearVelocity = Vector3.zero;
             _rigidbody.angularVelocity = Vector3.zero;
-            _rigidbody.position = position;
-            _rigidbody.rotation = rotation;
-            _rigidbody.transform.SetPositionAndRotation(position, rotation);
         }
     }
 }
