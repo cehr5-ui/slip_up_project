@@ -50,7 +50,7 @@ namespace SlipUp
 
         internal bool TryTakeCoin(Collider other)
         {
-            if (other.TryGetComponent(out CoinSpin coin) == false)
+            if (other.TryGetComponent(out Coin coin) == false)
             {
                 return false;
             }

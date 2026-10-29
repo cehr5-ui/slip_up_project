@@ -1,20 +1,41 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Pool;
 
 namespace SlipUp
 {
     public class CoinSpawner : MonoBehaviour
     {
-        [SerializeField] private GameObject _coinPrefab;
+        [SerializeField] private Coin _coinPrefab;
         [SerializeField] private Transform[] _points;
 
-        private readonly List<GameObject> _coins = new List<GameObject>();
+        private readonly List<Coin> _coins = new List<Coin>();
+        private ObjectPool<Coin> _pool;
+        private Transform _point;
 
         public int CoinCount => _points.Length;
 
+        private void Awake()
+        {
+            _pool = new ObjectPool<Coin>(CreateCoin, OnGetCoin, OnReleaseCoin, null, true, _points.Length);
+        }
+
         private void Start()
         {
-            SpawnCoins();
+            RespawnCoins();
+        }
+
+        private void OnDestroy()
+        {
+            if (_pool == null)
+            {
+                return;
+            }
+
+            _pool.Dispose();
+            _pool = null;
+            _point = null;
+            _coins.Clear();
         }
 
         private void OnDrawGizmos()
@@ -32,7 +53,7 @@ namespace SlipUp
 
         public void RespawnCoins()
         {
-            ClearCoins();
+            ReleaseCoins();
             SpawnCoins();
         }
 
@@ -40,28 +61,39 @@ namespace SlipUp
         {
             for (int i = 0; i < _points.Length; i++)
             {
-                Transform point = _points[i];
-                GameObject coin = Instantiate(_coinPrefab, point.position, point.rotation, transform);
-                _coins.Add(coin);
+                _point = _points[i];
+                _pool.Get();
             }
         }
 
-        private void ClearCoins()
+        private void ReleaseCoins()
         {
-            for (int i = 0; i < _coins.Count; i++)
+            for (int i = _coins.Count - 1; i >= 0; i--)
             {
-                GameObject coin = _coins[i];
-
-                if (coin == null)
-                {
-                    continue;
-                }
-
-                coin.SetActive(false);
-                Destroy(coin);
+                _pool.Release(_coins[i]);
             }
+        }
 
-            _coins.Clear();
+        private Coin CreateCoin()
+        {
+            Coin coin = Instantiate(_coinPrefab, transform);
+            coin.Initialize(_pool);
+            coin.gameObject.SetActive(false);
+            return coin;
+        }
+
+        private void OnGetCoin(Coin coin)
+        {
+            Transform point = _point;
+            coin.transform.SetPositionAndRotation(point.position, point.rotation);
+            _coins.Add(coin);
+            coin.gameObject.SetActive(true);
+        }
+
+        private void OnReleaseCoin(Coin coin)
+        {
+            _coins.Remove(coin);
+            coin.gameObject.SetActive(false);
         }
     }
 }

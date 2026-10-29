@@ -528,6 +528,8 @@ MonoBehaviour:
   _timeLabel: {fileID: 1644563676}
   _messageLabel: {fileID: 1096847361}
   _dashLabel: {fileID: 11421552}
+  _punchStrength: 0.3
+  _punchDuration: 0.35
 --- !u!114 &229988247
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4063,6 +4065,22 @@ PrefabInstance:
     - target: {fileID: 2927038953132435261, guid: 41c86c5eff2a7e9459dd35976feda663, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3716746001819446024, guid: 41c86c5eff2a7e9459dd35976feda663, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 2.0295
+      objectReference: {fileID: 0}
+    - target: {fileID: 3716746001819446024, guid: 41c86c5eff2a7e9459dd35976feda663, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 3.3098
+      objectReference: {fileID: 0}
+    - target: {fileID: 3716746001819446024, guid: 41c86c5eff2a7e9459dd35976feda663, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -3.9074
+      objectReference: {fileID: 0}
+    - target: {fileID: 3716746001819446024, guid: 41c86c5eff2a7e9459dd35976feda663, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: -1.9634
       objectReference: {fileID: 0}
     - target: {fileID: 8725507415782517144, guid: 41c86c5eff2a7e9459dd35976feda663, type: 3}
       propertyPath: _level
