@@ -4,19 +4,24 @@ namespace SlipUp
 {
     public class PlayerAudio : MonoBehaviour
     {
-        [SerializeField] private AudioSource _audioSource;
+        [SerializeField] private AudioService _audio;
         [SerializeField] private AudioClip _collectClip;
         [SerializeField] private AudioClip _hitClip;
         [SerializeField] private float _collectVolume = 0.4f;
 
+        private void OnDestroy()
+        {
+            _audio = null;
+        }
+
         public void PlayCollect()
         {
-            _audioSource.PlayOneShot(_collectClip, _collectVolume);
+            _audio.PlaySfx(_collectClip, _collectVolume);
         }
 
         public void PlayHit()
         {
-            _audioSource.PlayOneShot(_hitClip);
+            _audio.PlaySfx(_hitClip);
         }
     }
 }

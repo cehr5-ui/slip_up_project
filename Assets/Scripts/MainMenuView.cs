@@ -15,6 +15,7 @@ namespace SlipUp
         [SerializeField] private Button _playButton;
         [SerializeField] private Toggle _soundToggle;
         [SerializeField] private TextMeshProUGUI _lastRunLabel;
+        [SerializeField] private AudioService _audio;
 
         private RunFlow _runFlow;
         private SaveService _save;
@@ -49,6 +50,7 @@ namespace SlipUp
         {
             _runFlow = null;
             _save = null;
+            _audio = null;
         }
 
         private void CreateSave()
@@ -100,7 +102,7 @@ namespace SlipUp
 
         private void ApplySound(bool isEnabled)
         {
-            AudioListener.volume = isEnabled ? 1f : 0f;
+            _audio.SetEnabled(isEnabled);
         }
 
         private void OnPlayClicked()
