@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using UnityEngine;
 
@@ -24,6 +25,7 @@ namespace SlipUp
         private bool _isFinished;
         private WaitForSeconds _countStep;
         private Coroutine _countdown;
+        private SaveService _save;
 
         internal void Play()
         {
@@ -86,7 +88,9 @@ namespace SlipUp
 
         private void Awake()
         {
+            _save = new SaveService();
             _countStep = new WaitForSeconds(CountStepDuration);
+            _hasBestTime = _save.TryGetBestTime(out _bestTime);
             _menu.Initialize(this);
             _result.Initialize(this);
         }
@@ -127,6 +131,7 @@ namespace SlipUp
             _menu = null;
             _result = null;
             _countStep = null;
+            _save = null;
         }
 
         private void OnTriggerEnter(Collider other)
@@ -178,6 +183,7 @@ namespace SlipUp
 
             _bestTime = time;
             _hasBestTime = true;
+            _save.SetBestTime(time);
         }
 
         private IEnumerator Countdown()
@@ -204,6 +210,7 @@ namespace SlipUp
 
             _startTime = Time.time;
             _isRunning = true;
+            _save.SetLastGameDate(DateTime.Now);
             _level.BeginAttempt();
             ShowElapsed();
         }

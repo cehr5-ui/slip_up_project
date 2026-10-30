@@ -1,3 +1,4 @@
+using System;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -6,24 +7,34 @@ namespace SlipUp
 {
     public class MainMenuView : MonoBehaviour
     {
-        private const string LastRunText = "Последняя игра: —";
+        private const string LastRunMissing = "Последняя игра: —";
+        private const string LastRunFormat = "Последняя игра: {0:dd.MM.yyyy HH:mm}";
 
         [SerializeField] private Button _playButton;
         [SerializeField] private Toggle _soundToggle;
         [SerializeField] private TextMeshProUGUI _lastRunLabel;
 
         private RunFlow _runFlow;
+        private SaveService _save;
 
         internal void Initialize(RunFlow runFlow)
         {
             _runFlow = runFlow;
-            _lastRunLabel.text = LastRunText;
+        }
+
+        private void Awake()
+        {
+            _save = new SaveService();
+            bool isSoundEnabled = _save.IsSoundEnabled;
+            _soundToggle.SetIsOnWithoutNotify(isSoundEnabled);
+            ApplySound(isSoundEnabled);
         }
 
         private void OnEnable()
         {
             _playButton.onClick.AddListener(OnPlayClicked);
             _soundToggle.onValueChanged.AddListener(OnSoundChanged);
+            ShowLastGameDate();
         }
 
         private void OnDisable()
@@ -35,6 +46,23 @@ namespace SlipUp
         private void OnDestroy()
         {
             _runFlow = null;
+            _save = null;
+        }
+
+        private void ShowLastGameDate()
+        {
+            if (_save.TryGetLastGameDate(out DateTime lastGameDate))
+            {
+                _lastRunLabel.text = string.Format(LastRunFormat, lastGameDate);
+                return;
+            }
+
+            _lastRunLabel.text = LastRunMissing;
+        }
+
+        private void ApplySound(bool isEnabled)
+        {
+            AudioListener.volume = isEnabled ? 1f : 0f;
         }
 
         private void OnPlayClicked()
@@ -44,7 +72,8 @@ namespace SlipUp
 
         private void OnSoundChanged(bool isEnabled)
         {
-            AudioListener.volume = isEnabled ? 1f : 0f;
+            _save.SetIsSoundEnabled(isEnabled);
+            ApplySound(isEnabled);
         }
     }
 }
