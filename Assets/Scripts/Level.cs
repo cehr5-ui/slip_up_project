@@ -108,6 +108,18 @@ namespace SlipUp
             LockCameraToPlayer();
         }
 
+        internal void MoveToStart()
+        {
+            _player.TeleportToStart();
+            LockCameraToPlayer();
+        }
+
+        internal void ReleaseAtStart()
+        {
+            _player.ResumeCollection();
+            ReleasePlayer();
+        }
+
         internal void BeginAttempt()
         {
             _player.ResumeCollection();

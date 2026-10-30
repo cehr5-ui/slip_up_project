@@ -6,7 +6,9 @@ namespace SlipUp
 {
     public class RunFlow : MonoBehaviour
     {
+        private const int FallLimit = 3;
         private const float CountStepDuration = 1f;
+        private const float FallFreezeDuration = 1f;
         private const string CountThree = "3";
         private const string CountTwo = "2";
         private const string CountOne = "1";
@@ -21,10 +23,13 @@ namespace SlipUp
         private DateTime _runStartedAt;
         private float _bestTime;
         private bool _hasBestTime;
+        private int _fallCount;
         private bool _isRunning;
         private bool _isFinished;
         private WaitForSeconds _countStep;
+        private WaitForSeconds _fallFreeze;
         private Coroutine _countdown;
+        private Coroutine _fallRecover;
         private SaveService _save;
 
         internal void Play()
@@ -39,6 +44,8 @@ namespace SlipUp
                 return;
             }
 
+            StopFallRecover();
+            _fallCount = 0;
             _isFinished = false;
             _isRunning = false;
             _screens.Show(ScreenService.ScreenId.Hud);
@@ -56,6 +63,8 @@ namespace SlipUp
                 _countdown = null;
             }
 
+            StopFallRecover();
+            _fallCount = 0;
             _isRunning = false;
             _isFinished = false;
             _level.PrepareAttempt();
@@ -76,20 +85,29 @@ namespace SlipUp
                 return;
             }
 
-            _isFinished = true;
-            _isRunning = false;
-            TimeSpan duration = DateTime.UtcNow - _runStartedAt;
-            _scoreView.SetTime(duration);
+            if (_fallRecover != null)
+            {
+                return;
+            }
+
+            _fallCount++;
             _level.FreezePlayer();
             _level.PauseCollection();
-            _result.ShowFall(duration, _hasBestTime, _bestTime);
-            _screens.Show(ScreenService.ScreenId.Result);
+
+            if (_fallCount >= FallLimit)
+            {
+                FailRun();
+                return;
+            }
+
+            _fallRecover = StartCoroutine(RecoverAfterFall());
         }
 
         private void Awake()
         {
             _save = new SaveService();
             _countStep = new WaitForSeconds(CountStepDuration);
+            _fallFreeze = new WaitForSeconds(FallFreezeDuration);
             _hasBestTime = _save.TryGetBestTime(out _bestTime);
             _menu.Initialize(this);
             _result.Initialize(this);
@@ -125,12 +143,14 @@ namespace SlipUp
                 _countdown = null;
             }
 
+            StopFallRecover();
             _level = null;
             _scoreView = null;
             _screens = null;
             _menu = null;
             _result = null;
             _countStep = null;
+            _fallFreeze = null;
             _save = null;
         }
 
@@ -187,6 +207,43 @@ namespace SlipUp
             _bestTime = time;
             _hasBestTime = true;
             _save.SetBestTime(time);
+        }
+
+        private void FailRun()
+        {
+            StopFallRecover();
+            _isFinished = true;
+            _isRunning = false;
+            TimeSpan duration = DateTime.UtcNow - _runStartedAt;
+            _scoreView.SetTime(duration);
+            _result.ShowFall(duration, _hasBestTime, _bestTime);
+            _screens.Show(ScreenService.ScreenId.Result);
+        }
+
+        private void StopFallRecover()
+        {
+            if (_fallRecover == null)
+            {
+                return;
+            }
+
+            StopCoroutine(_fallRecover);
+            _fallRecover = null;
+        }
+
+        private IEnumerator RecoverAfterFall()
+        {
+            _level.MoveToStart();
+            yield return _fallFreeze;
+
+            if (_isFinished)
+            {
+                _fallRecover = null;
+                yield break;
+            }
+
+            _level.ReleaseAtStart();
+            _fallRecover = null;
         }
 
         private IEnumerator Countdown()
