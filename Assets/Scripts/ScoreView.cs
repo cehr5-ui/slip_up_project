@@ -1,3 +1,4 @@
+using System;
 using DG.Tweening;
 using TMPro;
 using UnityEngine;
@@ -7,7 +8,7 @@ namespace SlipUp
     public class ScoreView : MonoBehaviour
     {
         private const string ScoreFormat = "Монеты: {0}";
-        private const string TimeFormat = "Время: {0:0.00}";
+        private const string TimeFormat = "Время: {0:00}:{1:00}";
         private const string DashReadyText = "Рывок";
         private const string DashCooldownFormat = "Рывок {0:0.0}";
 
@@ -56,9 +57,11 @@ namespace SlipUp
             _punch = _labelTransform.DOPunchScale(new Vector3(_punchStrength, _punchStrength, 0f), _punchDuration);
         }
 
-        internal void SetTime(float time)
+        internal void SetTime(TimeSpan duration)
         {
-            _timeLabel.text = string.Format(TimeFormat, time);
+            int minutes = (int)duration.TotalMinutes;
+            int seconds = duration.Seconds;
+            _timeLabel.text = string.Format(TimeFormat, minutes, seconds);
         }
 
         internal void SetMessage(string message)

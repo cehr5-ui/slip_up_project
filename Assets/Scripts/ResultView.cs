@@ -1,3 +1,4 @@
+using System;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -8,8 +9,8 @@ namespace SlipUp
     {
         private const string FinishTitle = "Финиш";
         private const string FallTitle = "Упал";
-        private const string TimeFormat = "Время: {0:0.00}";
-        private const string BestTimeFormat = "Лучшее: {0:0.00}";
+        private const string TimeFormat = "Время: {0:00}:{1:00}";
+        private const string BestTimeFormat = "Лучшее: {0:00}:{1:00}";
         private const string BestTimeMissing = "Лучшее: —";
 
         [SerializeField] private TextMeshProUGUI _titleLabel;
@@ -25,16 +26,16 @@ namespace SlipUp
             _runFlow = runFlow;
         }
 
-        internal void ShowFinish(float time, bool hasBestTime, float bestTime)
+        internal void ShowFinish(TimeSpan duration, bool hasBestTime, float bestTime)
         {
             _titleLabel.text = FinishTitle;
-            ShowTimes(time, hasBestTime, bestTime);
+            ShowTimes(duration, hasBestTime, bestTime);
         }
 
-        internal void ShowFall(float time, bool hasBestTime, float bestTime)
+        internal void ShowFall(TimeSpan duration, bool hasBestTime, float bestTime)
         {
             _titleLabel.text = FallTitle;
-            ShowTimes(time, hasBestTime, bestTime);
+            ShowTimes(duration, hasBestTime, bestTime);
         }
 
         private void OnEnable()
@@ -54,17 +55,25 @@ namespace SlipUp
             _runFlow = null;
         }
 
-        private void ShowTimes(float time, bool hasBestTime, float bestTime)
+        private void ShowTimes(TimeSpan duration, bool hasBestTime, float bestTime)
         {
-            _timeLabel.text = string.Format(TimeFormat, time);
+            _timeLabel.text = FormatDuration(TimeFormat, duration);
 
             if (hasBestTime)
             {
-                _bestTimeLabel.text = string.Format(BestTimeFormat, bestTime);
+                TimeSpan bestDuration = TimeSpan.FromSeconds(bestTime);
+                _bestTimeLabel.text = FormatDuration(BestTimeFormat, bestDuration);
                 return;
             }
 
             _bestTimeLabel.text = BestTimeMissing;
+        }
+
+        private static string FormatDuration(string format, TimeSpan duration)
+        {
+            int minutes = (int)duration.TotalMinutes;
+            int seconds = duration.Seconds;
+            return string.Format(format, minutes, seconds);
         }
 
         private void OnAgainClicked()

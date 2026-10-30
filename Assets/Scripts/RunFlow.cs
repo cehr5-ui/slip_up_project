@@ -18,7 +18,7 @@ namespace SlipUp
         [SerializeField] private MainMenuView _menu;
         [SerializeField] private ResultView _result;
 
-        private float _startTime;
+        private DateTime _runStartedAt;
         private float _bestTime;
         private bool _hasBestTime;
         private bool _isRunning;
@@ -43,7 +43,7 @@ namespace SlipUp
             _isRunning = false;
             _screens.Show(ScreenService.ScreenId.Hud);
             _level.PrepareAttempt();
-            _scoreView.SetTime(0f);
+            _scoreView.SetTime(TimeSpan.Zero);
             _scoreView.SetMessage(string.Empty);
             _countdown = StartCoroutine(Countdown());
         }
@@ -59,7 +59,7 @@ namespace SlipUp
             _isRunning = false;
             _isFinished = false;
             _level.PrepareAttempt();
-            _scoreView.SetTime(0f);
+            _scoreView.SetTime(TimeSpan.Zero);
             _scoreView.SetMessage(string.Empty);
             _screens.Show(ScreenService.ScreenId.Menu);
         }
@@ -78,11 +78,11 @@ namespace SlipUp
 
             _isFinished = true;
             _isRunning = false;
-            float time = Time.time - _startTime;
-            _scoreView.SetTime(time);
+            TimeSpan duration = DateTime.UtcNow - _runStartedAt;
+            _scoreView.SetTime(duration);
             _level.FreezePlayer();
             _level.PauseCollection();
-            _result.ShowFall(time, _hasBestTime, _bestTime);
+            _result.ShowFall(duration, _hasBestTime, _bestTime);
             _screens.Show(ScreenService.ScreenId.Result);
         }
 
@@ -102,7 +102,7 @@ namespace SlipUp
             _level.FreezePlayer();
             _level.LockCameraToPlayer();
             _level.PauseCollection();
-            _scoreView.SetTime(0f);
+            _scoreView.SetTime(TimeSpan.Zero);
             _scoreView.SetMessage(string.Empty);
             _screens.Show(ScreenService.ScreenId.Menu);
         }
@@ -153,12 +153,12 @@ namespace SlipUp
 
             _isFinished = true;
             _isRunning = false;
-            float time = Time.time - _startTime;
-            _scoreView.SetTime(time);
-            RememberBest(time);
+            TimeSpan duration = DateTime.UtcNow - _runStartedAt;
+            _scoreView.SetTime(duration);
+            RememberBest(duration);
             _level.FreezePlayer();
             _level.PauseCollection();
-            _result.ShowFinish(time, _hasBestTime, _bestTime);
+            _result.ShowFinish(duration, _hasBestTime, _bestTime);
             _screens.Show(ScreenService.ScreenId.Result);
         }
 
@@ -171,11 +171,14 @@ namespace SlipUp
 
         private void ShowElapsed()
         {
-            _scoreView.SetTime(Time.time - _startTime);
+            TimeSpan duration = DateTime.UtcNow - _runStartedAt;
+            _scoreView.SetTime(duration);
         }
 
-        private void RememberBest(float time)
+        private void RememberBest(TimeSpan duration)
         {
+            float time = (float)duration.TotalSeconds;
+
             if (_hasBestTime && time >= _bestTime)
             {
                 return;
@@ -208,9 +211,9 @@ namespace SlipUp
                 return;
             }
 
-            _startTime = Time.time;
+            _runStartedAt = DateTime.UtcNow;
             _isRunning = true;
-            _save.SetLastGameDate(DateTime.Now);
+            _save.SetLastPlayedUtc(_runStartedAt);
             _level.BeginAttempt();
             ShowElapsed();
         }

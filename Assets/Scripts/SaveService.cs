@@ -8,7 +8,7 @@ namespace SlipUp
     {
         private const string BestTimeKey = "best_time";
         private const string IsSoundEnabledKey = "is_sound_enabled";
-        private const string LastGameDateKey = "last_game_date";
+        private const string LastPlayedUtcKey = "last_played_utc";
 
         internal bool IsSoundEnabled => PlayerPrefs.GetInt(IsSoundEnabledKey, 1) == 1;
 
@@ -36,22 +36,23 @@ namespace SlipUp
             PlayerPrefs.Save();
         }
 
-        internal bool TryGetLastGameDate(out DateTime lastGameDate)
+        internal bool TryGetLastPlayedUtc(out DateTime lastPlayedUtc)
         {
-            if (PlayerPrefs.HasKey(LastGameDateKey) == false)
+            if (PlayerPrefs.HasKey(LastPlayedUtcKey) == false)
             {
-                lastGameDate = default;
+                lastPlayedUtc = default;
                 return false;
             }
 
-            string storedDate = PlayerPrefs.GetString(LastGameDateKey);
-            return DateTime.TryParse(storedDate, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out lastGameDate);
+            string storedDate = PlayerPrefs.GetString(LastPlayedUtcKey);
+            return DateTime.TryParse(storedDate, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out lastPlayedUtc);
         }
 
-        internal void SetLastGameDate(DateTime lastGameDate)
+        internal void SetLastPlayedUtc(DateTime lastPlayedUtc)
         {
-            string storedDate = lastGameDate.ToString("o", CultureInfo.InvariantCulture);
-            PlayerPrefs.SetString(LastGameDateKey, storedDate);
+            DateTime universalTime = lastPlayedUtc.ToUniversalTime();
+            string storedDate = universalTime.ToString("o", CultureInfo.InvariantCulture);
+            PlayerPrefs.SetString(LastPlayedUtcKey, storedDate);
             PlayerPrefs.Save();
         }
     }

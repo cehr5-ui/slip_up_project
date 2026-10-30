@@ -8,7 +8,9 @@ namespace SlipUp
     public class MainMenuView : MonoBehaviour
     {
         private const string LastRunMissing = "Последняя игра: —";
-        private const string LastRunFormat = "Последняя игра: {0:dd.MM.yyyy HH:mm}";
+        private const string LastRunToday = "Последняя игра: сегодня";
+        private const string LastRunYesterday = "Последняя игра: вчера";
+        private const string LastRunDaysAgoFormat = "Последняя игра: {0} дн. назад";
 
         [SerializeField] private Button _playButton;
         [SerializeField] private Toggle _soundToggle;
@@ -24,17 +26,17 @@ namespace SlipUp
 
         private void Awake()
         {
-            _save = new SaveService();
-            bool isSoundEnabled = _save.IsSoundEnabled;
-            _soundToggle.SetIsOnWithoutNotify(isSoundEnabled);
-            ApplySound(isSoundEnabled);
+            CreateSave();
+            ApplyStoredSound();
         }
 
         private void OnEnable()
         {
+            CreateSave();
+            ApplyStoredSound();
             _playButton.onClick.AddListener(OnPlayClicked);
             _soundToggle.onValueChanged.AddListener(OnSoundChanged);
-            ShowLastGameDate();
+            ShowLastPlayed();
         }
 
         private void OnDisable()
@@ -49,15 +51,51 @@ namespace SlipUp
             _save = null;
         }
 
-        private void ShowLastGameDate()
+        private void CreateSave()
         {
-            if (_save.TryGetLastGameDate(out DateTime lastGameDate))
+            if (_save != null)
             {
-                _lastRunLabel.text = string.Format(LastRunFormat, lastGameDate);
                 return;
             }
 
-            _lastRunLabel.text = LastRunMissing;
+            _save = new SaveService();
+        }
+
+        private void ApplyStoredSound()
+        {
+            bool isSoundEnabled = _save.IsSoundEnabled;
+            _soundToggle.SetIsOnWithoutNotify(isSoundEnabled);
+            ApplySound(isSoundEnabled);
+        }
+
+        private void ShowLastPlayed()
+        {
+            if (_save.TryGetLastPlayedUtc(out DateTime lastPlayedUtc) == false)
+            {
+                _lastRunLabel.text = LastRunMissing;
+                return;
+            }
+
+            _lastRunLabel.text = FormatLastPlayed(lastPlayedUtc);
+        }
+
+        private static string FormatLastPlayed(DateTime lastPlayedUtc)
+        {
+            DateTime lastPlayedLocal = lastPlayedUtc.ToUniversalTime().ToLocalTime();
+            DateTime nowLocal = DateTime.UtcNow.ToLocalTime();
+            int dayCount = (nowLocal.Date - lastPlayedLocal.Date).Days;
+
+            if (dayCount <= 0)
+            {
+                return LastRunToday;
+            }
+
+            if (dayCount == 1)
+            {
+                return LastRunYesterday;
+            }
+
+            return string.Format(LastRunDaysAgoFormat, dayCount);
         }
 
         private void ApplySound(bool isEnabled)
