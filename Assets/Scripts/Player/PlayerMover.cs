@@ -1,3 +1,4 @@
+using Unity.Collections;
 using UnityEngine;
 
 namespace SlipUp
@@ -9,6 +10,10 @@ namespace SlipUp
         private const float GroundedMaxRiseSpeed = 0.1f;
         private const float SpeedPerCoin = 0.02f;
         private const float DashSpeedMultiplier = 3f;
+        private const float SideContactRadiusScale = 0.35f;
+        private const float FloorEdgeBelowCenter = 0.35f;
+        private const int DashWallTouchCapacity = 4;
+        internal const int DashWallLayerIndex = 6;
 
         [SerializeField] private Rigidbody _rigidbody;
         [SerializeField] private CapsuleCollider _capsule;
@@ -30,6 +35,7 @@ namespace SlipUp
         private bool _isJumpRequested;
         private bool _isDashRequested;
         private bool _isDashing;
+        private bool _isPassingDashWall;
         private bool _isGrounded;
         private bool _hasAirJump;
         private float _coyoteTimeLeft;
@@ -40,11 +46,21 @@ namespace SlipUp
         private Vector3 _bounceVelocity;
         private bool _isRunStarted;
         private bool _isFrozen;
+        private int _capsuleId;
+        private float _sideContactDistanceSqr;
+        private Vector3 _capsuleCenter;
+        private PhysicsMaterial _slideMaterial;
         private readonly RaycastHit[] _groundHits = new RaycastHit[8];
+        private readonly Collider[] _touchingDashWalls = new Collider[DashWallTouchCapacity];
+        private readonly Collider[] _ignoredDashWalls = new Collider[DashWallTouchCapacity];
+        private int _touchingDashWallCount;
+        private int _ignoredDashWallCount;
 
         internal bool IsControlEnabled => _isRunStarted && _isFrozen == false;
 
         private bool IsDashReady => _dashCooldownLeft <= 0f;
+
+        private bool IsTouchingDashWall => _touchingDashWallCount > 0;
 
         private bool IsTouchingGround
         {
@@ -86,10 +102,33 @@ namespace SlipUp
 
             _rigidbody.freezeRotation = true;
             _rigidbody.interpolation = RigidbodyInterpolation.Interpolate;
+            _capsuleId = _capsule.GetInstanceID();
+            _capsuleCenter = _capsule.center;
+            float sideContactDistance = _capsule.radius * SideContactRadiusScale;
+            _sideContactDistanceSqr = sideContactDistance * sideContactDistance;
+            CreateSlideMaterial();
+        }
+
+        private void OnEnable()
+        {
+            _capsule.hasModifiableContacts = true;
+            Physics.ContactModifyEvent += OnContactModify;
+            Physics.ContactModifyEventCCD += OnContactModify;
+        }
+
+        private void OnDisable()
+        {
+            EndDashPass();
+            Physics.ContactModifyEvent -= OnContactModify;
+            Physics.ContactModifyEventCCD -= OnContactModify;
         }
 
         private void OnDestroy()
         {
+            EndDashPass();
+            ClearTouchingDashWalls();
+            Destroy(_slideMaterial);
+            _slideMaterial = null;
             _level = null;
         }
 
@@ -161,6 +200,8 @@ namespace SlipUp
                 return;
             }
 
+            EndDashPass();
+
             Vector3 wishDirection = GetWishDirection();
             Vector3 targetVelocity = wishDirection * maxSpeed;
 
@@ -192,6 +233,7 @@ namespace SlipUp
             _isDashing = false;
             _isDashRequested = false;
             _isJumpRequested = false;
+            EndDashPass();
             _bounceVelocity = velocity;
             _bounceTimeLeft = _bounceDuration;
             _rigidbody.linearVelocity = velocity;
@@ -210,12 +252,18 @@ namespace SlipUp
             _isDashRequested = false;
             _isDashing = false;
             _dashDistanceLeft = 0f;
+            EndDashPass();
             _bounceTimeLeft = 0f;
             _isGrounded = false;
             _hasAirJump = false;
             _coyoteTimeLeft = 0f;
-            _rigidbody.linearVelocity = Vector3.zero;
-            _rigidbody.angularVelocity = Vector3.zero;
+
+            if (_rigidbody.isKinematic == false)
+            {
+                _rigidbody.linearVelocity = Vector3.zero;
+                _rigidbody.angularVelocity = Vector3.zero;
+            }
+
             _rigidbody.isKinematic = true;
         }
 
@@ -310,8 +358,9 @@ namespace SlipUp
 
             Vector3 velocity = _rigidbody.linearVelocity;
             Vector3 direction = new Vector3(velocity.x, 0f, velocity.z);
+            bool isAimingThroughWall = IsTouchingDashWall && _planarInput.sqrMagnitude > 0.01f;
 
-            if (direction.sqrMagnitude <= 0.01f)
+            if (isAimingThroughWall || direction.sqrMagnitude <= 0.01f)
             {
                 direction = GetWishDirection();
             }
@@ -328,6 +377,7 @@ namespace SlipUp
             _dashDistanceLeft = _dashDistance;
             _isDashing = true;
             _dashCooldownLeft = _dashCooldown;
+            BeginDashPass();
         }
 
         private Vector3 GetWishDirection()
@@ -351,6 +401,232 @@ namespace SlipUp
 
             _dashDistanceLeft -= step;
             _rigidbody.linearVelocity = new Vector3(_dashDirection.x * _dashSpeed, 0f, _dashDirection.z * _dashSpeed);
+        }
+
+        private void BeginDashPass()
+        {
+            _isPassingDashWall = true;
+            LayerMask dashWallMask = 1 << DashWallLayerIndex;
+            _capsule.excludeLayers = dashWallMask;
+            _rigidbody.excludeLayers = dashWallMask;
+            IgnoreTouchingDashWalls();
+        }
+
+        private void EndDashPass()
+        {
+            if (_isPassingDashWall == false)
+            {
+                return;
+            }
+
+            _isPassingDashWall = false;
+            _capsule.excludeLayers = default;
+            _rigidbody.excludeLayers = default;
+            RestoreDashWallCollisions();
+        }
+
+        private void IgnoreTouchingDashWalls()
+        {
+            _ignoredDashWallCount = _touchingDashWallCount;
+
+            for (int i = 0; i < _ignoredDashWallCount; i++)
+            {
+                _ignoredDashWalls[i] = _touchingDashWalls[i];
+            }
+
+            for (int i = 0; i < _ignoredDashWallCount; i++)
+            {
+                Physics.IgnoreCollision(_capsule, _ignoredDashWalls[i], true);
+            }
+        }
+
+        private void RestoreDashWallCollisions()
+        {
+            for (int i = 0; i < _ignoredDashWallCount; i++)
+            {
+                Physics.IgnoreCollision(_capsule, _ignoredDashWalls[i], false);
+                _ignoredDashWalls[i] = null;
+            }
+
+            _ignoredDashWallCount = 0;
+        }
+
+        private void RememberDashWall(Collider dashWall)
+        {
+            if (dashWall.gameObject.layer != DashWallLayerIndex)
+            {
+                return;
+            }
+
+            for (int i = 0; i < _touchingDashWallCount; i++)
+            {
+                if (_touchingDashWalls[i] == dashWall)
+                {
+                    return;
+                }
+            }
+
+            if (_touchingDashWallCount >= DashWallTouchCapacity)
+            {
+                return;
+            }
+
+            _touchingDashWalls[_touchingDashWallCount] = dashWall;
+            _touchingDashWallCount++;
+        }
+
+        private void ForgetDashWall(Collider dashWall)
+        {
+            for (int i = 0; i < _touchingDashWallCount; i++)
+            {
+                if (_touchingDashWalls[i] != dashWall)
+                {
+                    continue;
+                }
+
+                int lastIndex = _touchingDashWallCount - 1;
+                _touchingDashWalls[i] = _touchingDashWalls[lastIndex];
+                _touchingDashWalls[lastIndex] = null;
+                _touchingDashWallCount = lastIndex;
+                return;
+            }
+        }
+
+        private void ClearTouchingDashWalls()
+        {
+            for (int i = 0; i < _touchingDashWallCount; i++)
+            {
+                _touchingDashWalls[i] = null;
+            }
+
+            _touchingDashWallCount = 0;
+        }
+
+        private void CreateSlideMaterial()
+        {
+            _slideMaterial = new PhysicsMaterial();
+            _slideMaterial.dynamicFriction = 0f;
+            _slideMaterial.staticFriction = 0f;
+            _slideMaterial.bounciness = 0f;
+            _slideMaterial.frictionCombine = PhysicsMaterialCombine.Minimum;
+            _slideMaterial.bounceCombine = PhysicsMaterialCombine.Minimum;
+            _capsule.sharedMaterial = _slideMaterial;
+        }
+
+        private bool IsPlayerPair(ModifiableContactPair pair)
+        {
+            if (pair.colliderInstanceID == _capsuleId)
+            {
+                return true;
+            }
+
+            return pair.otherColliderInstanceID == _capsuleId;
+        }
+
+        private bool TryAdjustContacts(ref ModifiableContactPair pair)
+        {
+            Vector3 axis = pair.position;
+            Quaternion rotation = pair.rotation;
+
+            if (pair.colliderInstanceID != _capsuleId)
+            {
+                axis = pair.otherPosition;
+                rotation = pair.otherRotation;
+            }
+
+            axis += rotation * _capsuleCenter;
+            float floorEdgeHeight = axis.y - FloorEdgeBelowCenter;
+            bool isChanged = false;
+
+            for (int contactIndex = 0; contactIndex < pair.contactCount; contactIndex++)
+            {
+                Vector3 point = pair.GetPoint(contactIndex);
+                Vector3 normal = pair.GetNormal(contactIndex);
+
+                if (TryClearFloorEdge(ref pair, contactIndex, point, normal, floorEdgeHeight))
+                {
+                    isChanged = true;
+                    continue;
+                }
+
+                Vector3 offset = point - axis;
+                offset.y = 0f;
+
+                if (offset.sqrMagnitude <= _sideContactDistanceSqr)
+                {
+                    continue;
+                }
+
+                Vector3 flatNormal = new Vector3(normal.x, 0f, normal.z);
+
+                if (flatNormal.sqrMagnitude <= 0.0001f)
+                {
+                    continue;
+                }
+
+                pair.SetNormal(contactIndex, flatNormal.normalized);
+                isChanged = true;
+            }
+
+            return isChanged;
+        }
+
+        private static bool TryClearFloorEdge(ref ModifiableContactPair pair, int contactIndex, Vector3 point, Vector3 normal, float floorEdgeHeight)
+        {
+            if (point.y >= floorEdgeHeight)
+            {
+                return false;
+            }
+
+            if (normal.y > GroundNormalY)
+            {
+                pair.SetNormal(contactIndex, Vector3.up);
+                return true;
+            }
+
+            if (normal.y < -GroundNormalY)
+            {
+                pair.SetNormal(contactIndex, Vector3.down);
+                return true;
+            }
+
+            pair.IgnoreContact(contactIndex);
+            return true;
+        }
+
+        private void OnContactModify(PhysicsScene scene, NativeArray<ModifiableContactPair> pairs)
+        {
+            for (int i = 0; i < pairs.Length; i++)
+            {
+                ModifiableContactPair pair = pairs[i];
+
+                if (IsPlayerPair(pair) == false)
+                {
+                    continue;
+                }
+
+                if (TryAdjustContacts(ref pair) == false)
+                {
+                    continue;
+                }
+
+                pairs[i] = pair;
+            }
+        }
+
+        private void OnCollisionEnter(Collision collision)
+        {
+            RememberDashWall(collision.collider);
+        }
+
+        private void OnCollisionStay(Collision collision)
+        {
+            RememberDashWall(collision.collider);
+        }
+
+        private void OnCollisionExit(Collision collision)
+        {
+            ForgetDashWall(collision.collider);
         }
     }
 }

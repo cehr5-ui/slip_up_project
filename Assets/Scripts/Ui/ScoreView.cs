@@ -11,6 +11,7 @@ namespace SlipUp
         private const string TimeFormat = "Время: {0:00}:{1:00}";
         private const string DashReadyText = "Рывок";
         private const string DashCooldownFormat = "Рывок {0:0.0}";
+        private const string LivesFormat = "Жизни: {0}";
 
         private static readonly Color DashReadyColor = Color.white;
         private static readonly Color DashCooldownColor = new Color(1f, 1f, 1f, 0.35f);
@@ -19,6 +20,7 @@ namespace SlipUp
         [SerializeField] private TextMeshProUGUI _timeLabel;
         [SerializeField] private TextMeshProUGUI _messageLabel;
         [SerializeField] private TextMeshProUGUI _dashLabel;
+        [SerializeField] private TextMeshProUGUI _livesLabel;
         [SerializeField] private float _punchStrength = 0.3f;
         [SerializeField] private float _punchDuration = 0.35f;
 
@@ -67,6 +69,11 @@ namespace SlipUp
         internal void SetMessage(string message)
         {
             _messageLabel.text = message;
+        }
+
+        internal void SetLives(int livesLeft)
+        {
+            _livesLabel.text = string.Format(LivesFormat, livesLeft);
         }
 
         internal void SetDash(bool isReady, float cooldownLeft)

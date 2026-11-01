@@ -52,6 +52,7 @@ namespace SlipUp
             _level.PrepareAttempt();
             _scoreView.SetTime(TimeSpan.Zero);
             _scoreView.SetMessage(string.Empty);
+            ShowLives();
             _countdown = StartCoroutine(Countdown());
         }
 
@@ -70,6 +71,7 @@ namespace SlipUp
             _level.PrepareAttempt();
             _scoreView.SetTime(TimeSpan.Zero);
             _scoreView.SetMessage(string.Empty);
+            ShowLives();
             _screens.Show(ScreenService.ScreenId.Menu);
         }
 
@@ -91,6 +93,7 @@ namespace SlipUp
             }
 
             _fallCount++;
+            ShowLives();
             _level.FreezePlayer();
             _level.PauseCollection();
 
@@ -122,6 +125,7 @@ namespace SlipUp
             _level.PauseCollection();
             _scoreView.SetTime(TimeSpan.Zero);
             _scoreView.SetMessage(string.Empty);
+            ShowLives();
             _screens.Show(ScreenService.ScreenId.Menu);
         }
 
@@ -193,6 +197,11 @@ namespace SlipUp
         {
             TimeSpan duration = DateTime.UtcNow - _runStartedAt;
             _scoreView.SetTime(duration);
+        }
+
+        private void ShowLives()
+        {
+            _scoreView.SetLives(FallLimit - _fallCount);
         }
 
         private void RememberBest(TimeSpan duration)

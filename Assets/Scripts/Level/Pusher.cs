@@ -8,6 +8,8 @@ namespace SlipUp
         [SerializeField] private float _upwardBounce = 0.5f;
         [SerializeField] private float _hitPunchStrength = 0.2f;
         [SerializeField] private float _hitPunchDuration = 0.25f;
+        [SerializeField] private float _bounceMultiplier = 1f;
+        [SerializeField] private float _minimumBounceSpeed = 18f;
 
         private Level _level;
         private Vector3 _scale;
@@ -106,7 +108,21 @@ namespace SlipUp
                 reflected.y *= _upwardBounce;
             }
 
-            bounceVelocity = reflected;
+            bounceVelocity = reflected * _bounceMultiplier;
+            float minimumSpeed = _minimumBounceSpeed * _bounceMultiplier;
+            float minimumSpeedSqr = minimumSpeed * minimumSpeed;
+
+            if (bounceVelocity.sqrMagnitude >= minimumSpeedSqr)
+            {
+                return true;
+            }
+
+            if (bounceVelocity.sqrMagnitude < 0.0001f)
+            {
+                return false;
+            }
+
+            bounceVelocity = bounceVelocity.normalized * minimumSpeed;
             return true;
         }
 

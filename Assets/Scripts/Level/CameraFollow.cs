@@ -4,25 +4,21 @@ namespace SlipUp
 {
     public class CameraFollow : MonoBehaviour
     {
-        [SerializeField] private Vector3 _offset = new Vector3(0f, 3.5f, -8f);
-        [SerializeField] private float _followSpeed = 10f;
-        [SerializeField] private float _yawSpeed = 2f;
-        [SerializeField] private float _pitchSpeed = 2f;
-        [SerializeField] private float _minPitch = -25f;
-        [SerializeField] private float _maxPitch = 60f;
-        [SerializeField] private float _focusHeight = 0.5f;
+        private const float DirectionEpsilonSqr = 0.0001f;
+
+        [SerializeField] private float _distance = 8.75f;
+        [SerializeField] private float _pitch = 32f;
+        [SerializeField] private float _lookHeight = 1.1f;
+        [SerializeField] private float _yawSpeed = 2.5f;
         [SerializeField] private float _collisionRadius = 0.3f;
-        [SerializeField] private float _collisionPadding = 0.1f;
-        [SerializeField] private float _minDistance = 1f;
+        [SerializeField] private float _collisionPadding = 0.15f;
+        [SerializeField] private float _minDistance = 1.15f;
         [SerializeField] private LayerMask _collisionMask = ~0;
-        [SerializeField] private bool _useSmoothing = true;
 
         private readonly RaycastHit[] _hits = new RaycastHit[16];
         private Level _level;
         private float _yaw;
-        private float _pitch;
-        private Vector3 _pivotPosition;
-        private bool _hasPivot;
+        private bool _hasPose;
         private bool _isLookEnabled;
         private bool _isLockedToPlayer;
 
@@ -47,14 +43,12 @@ namespace SlipUp
         private void LateUpdate()
         {
             Transform playerFocus = PlayerFocus;
+            Vector3 focusPosition = playerFocus.position;
 
             if (_isLookEnabled)
             {
                 Cursor.lockState = CursorLockMode.Locked;
                 Cursor.visible = false;
-                _yaw += Input.GetAxis("Mouse X") * _yawSpeed;
-                _pitch += Input.GetAxis("Mouse Y") * _pitchSpeed;
-                _pitch = Mathf.Clamp(_pitch, _minPitch, _maxPitch);
             }
             else
             {
@@ -62,29 +56,27 @@ namespace SlipUp
                 Cursor.visible = true;
             }
 
-            Quaternion orbitRotation = Quaternion.Euler(_pitch, _yaw, 0f);
-
-            if (_hasPivot == false || _useSmoothing == false || _isLockedToPlayer)
+            if (_hasPose == false || _isLockedToPlayer)
             {
-                _pivotPosition = playerFocus.position;
-                _hasPivot = true;
+                _yaw = GetPlanarYaw(playerFocus.forward);
+                _hasPose = true;
             }
-            else
+            else if (_isLookEnabled)
             {
-                float t = 1f - Mathf.Exp(-_followSpeed * Time.deltaTime);
-                _pivotPosition = Vector3.Lerp(_pivotPosition, playerFocus.position, t);
+                _yaw += Input.GetAxis("Mouse X") * _yawSpeed;
             }
 
-            Vector3 desiredPosition = _pivotPosition + orbitRotation * _offset;
-            transform.position = KeepOutOfSurfaces(desiredPosition);
-            transform.LookAt(playerFocus.position);
+            Quaternion rotation = Quaternion.Euler(_pitch, _yaw, 0f);
+            Vector3 lookPosition = focusPosition + Vector3.up * _lookHeight;
+            Vector3 desiredPosition = lookPosition - rotation * Vector3.forward * _distance;
+            Vector3 position = KeepOutOfSurfaces(lookPosition, desiredPosition);
+            transform.SetPositionAndRotation(position, rotation);
         }
 
         internal void LockToPlayer()
         {
-            _pivotPosition = PlayerFocus.position;
-            _hasPivot = true;
             _isLockedToPlayer = true;
+            _hasPose = false;
         }
 
         internal void UnlockFollow()
@@ -97,19 +89,31 @@ namespace SlipUp
             _isLookEnabled = isEnabled;
         }
 
-        private Vector3 KeepOutOfSurfaces(Vector3 desiredPosition)
+        private static float GetPlanarYaw(Vector3 direction)
         {
-            Vector3 focus = _pivotPosition + Vector3.up * _focusHeight;
-            Vector3 direction = desiredPosition - focus;
+            direction.y = 0f;
+
+            if (direction.sqrMagnitude <= DirectionEpsilonSqr)
+            {
+                return 0f;
+            }
+
+            return Mathf.Atan2(direction.x, direction.z) * Mathf.Rad2Deg;
+        }
+
+        private Vector3 KeepOutOfSurfaces(Vector3 origin, Vector3 desiredPosition)
+        {
+            Vector3 direction = desiredPosition - origin;
             float distance = direction.magnitude;
 
             if (distance < _minDistance)
             {
-                return focus + direction.normalized * _minDistance;
+                return origin + direction.normalized * _minDistance;
             }
 
             direction /= distance;
-            int hitCount = Physics.SphereCastNonAlloc(focus, _collisionRadius, direction, _hits, distance, _collisionMask, QueryTriggerInteraction.Ignore);
+            int collisionMask = _collisionMask & ~(1 << PlayerMover.DashWallLayerIndex);
+            int hitCount = Physics.SphereCastNonAlloc(origin, _collisionRadius, direction, _hits, distance, collisionMask, QueryTriggerInteraction.Ignore);
             float allowedDistance = distance;
 
             for (int i = 0; i < hitCount; i++)
@@ -132,7 +136,7 @@ namespace SlipUp
                 allowedDistance = _minDistance;
             }
 
-            return focus + direction * allowedDistance;
+            return origin + direction * allowedDistance;
         }
 
         private bool IsOwnCollider(Transform hitTransform)
