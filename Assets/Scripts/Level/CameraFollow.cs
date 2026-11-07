@@ -148,7 +148,12 @@ namespace SlipUp
                 return true;
             }
 
-            return playerFocus.IsChildOf(hitTransform);
+            if (playerFocus.IsChildOf(hitTransform))
+            {
+                return true;
+            }
+
+            return _level.IsPlayer(hitTransform.gameObject);
         }
     }
 }

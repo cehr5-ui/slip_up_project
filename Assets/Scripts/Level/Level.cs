@@ -85,7 +85,12 @@ namespace SlipUp
 
         internal bool IsPlayer(GameObject target)
         {
-            return target == _player.gameObject;
+            if (target == _player.gameObject)
+            {
+                return true;
+            }
+
+            return target.transform.IsChildOf(_player.transform);
         }
 
         internal void BouncePlayer(Vector3 velocity)
