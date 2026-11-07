@@ -46,6 +46,7 @@ namespace SlipUp
         private Vector3 _bounceVelocity;
         private bool _isRunStarted;
         private bool _isFrozen;
+        private bool _isReady;
         private int _capsuleId;
         private float _sideContactDistanceSqr;
         private Vector3 _capsuleCenter;
@@ -57,6 +58,8 @@ namespace SlipUp
         private int _ignoredDashWallCount;
 
         internal bool IsControlEnabled => _isRunStarted && _isFrozen == false;
+
+        internal bool IsFrozen => _isFrozen;
 
         private bool IsDashReady => _dashCooldownLeft <= 0f;
 
@@ -92,6 +95,7 @@ namespace SlipUp
         {
             _model = model;
             _cameraTransform = cameraTransform;
+            _isReady = true;
         }
 
         private void Awake()
@@ -131,6 +135,11 @@ namespace SlipUp
 
         private void Update()
         {
+            if (_isReady == false)
+            {
+                return;
+            }
+
             if (_dashCooldownLeft > 0f)
             {
                 _dashCooldownLeft -= Time.deltaTime;
@@ -168,7 +177,7 @@ namespace SlipUp
 
         private void FixedUpdate()
         {
-            if (_isFrozen)
+            if (_isReady == false || _isFrozen)
             {
                 return;
             }
@@ -233,7 +242,6 @@ namespace SlipUp
             EndDashPass();
             _bounceVelocity = velocity;
             _bounceTimeLeft = _bounceDuration;
-            _rigidbody.linearVelocity = velocity;
         }
 
         internal void BeginRun()

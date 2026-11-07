@@ -27,6 +27,7 @@ namespace SlipUp
         private int _fallCount;
         private bool _isRunning;
         private bool _isFinished;
+        private bool _isRecovering;
         private WaitForSeconds _countStep;
         private WaitForSeconds _fallFreeze;
         private Coroutine _countdown;
@@ -133,6 +134,7 @@ namespace SlipUp
             DetachRunner();
             Runner runner = _spawner.Spawn(_arena.StartPosition, _arena.StartRotation);
             AttachRunner(runner);
+            runner.gameObject.SetActive(true);
 
             if (isFrozen == false)
             {
@@ -235,6 +237,8 @@ namespace SlipUp
 
         private void StopFallRecover()
         {
+            _isRecovering = false;
+
             if (_fallRecover == null)
             {
                 return;
@@ -260,6 +264,7 @@ namespace SlipUp
             if (_isFinished)
             {
                 _fallRecover = null;
+                _isRecovering = false;
                 yield break;
             }
 
@@ -269,11 +274,13 @@ namespace SlipUp
             }
 
             _runner.ResumeCollection();
+            _runner.BeginRun();
             _runner.Release();
             _camera.UnlockFollow();
             _camera.SetLookEnabled(_runner.IsControlEnabled);
             SetPhase(RunPhase.Running);
             _fallRecover = null;
+            _isRecovering = false;
         }
 
         private IEnumerator Countdown()
@@ -327,12 +334,7 @@ namespace SlipUp
                 return;
             }
 
-            if (_isRunning == false)
-            {
-                return;
-            }
-
-            if (_fallRecover != null)
+            if (_isRunning == false || _isRecovering)
             {
                 return;
             }
@@ -347,6 +349,7 @@ namespace SlipUp
                 return;
             }
 
+            _isRecovering = true;
             _fallRecover = StartCoroutine(RecoverAfterFall());
         }
 

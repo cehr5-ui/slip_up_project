@@ -23,7 +23,6 @@ namespace SlipUp
         {
             Despawn();
             _runner = Instantiate(_template, position, rotation, transform);
-            _runner.gameObject.SetActive(true);
             return _runner;
         }
 

@@ -5,18 +5,19 @@ namespace SlipUp
 {
     public class Pusher : MonoBehaviour
     {
+        [SerializeField] private Transform _visual;
         [SerializeField] private float _upwardBounce = 0.5f;
         [SerializeField] private float _hitPunchStrength = 0.2f;
         [SerializeField] private float _hitPunchDuration = 0.25f;
         [SerializeField] private float _bounceMultiplier = 1f;
         [SerializeField] private float _minimumBounceSpeed = 18f;
 
-        private Vector3 _scale;
+        private Vector3 _visualScale;
         private Tween _hitPunch;
 
         private void Awake()
         {
-            _scale = transform.localScale;
+            _visualScale = _visual.localScale;
         }
 
         protected virtual void OnDisable()
@@ -28,7 +29,13 @@ namespace SlipUp
 
             _hitPunch.Kill();
             _hitPunch = null;
-            transform.localScale = _scale;
+            _visual.localScale = _visualScale;
+        }
+
+        private void OnDestroy()
+        {
+            _hitPunch = null;
+            _visual = null;
         }
 
         private void OnCollisionEnter(Collision collision)
@@ -62,8 +69,13 @@ namespace SlipUp
                 _hitPunch = null;
             }
 
-            transform.localScale = _scale;
-            _hitPunch = transform.DOPunchScale(Vector3.one * _hitPunchStrength, _hitPunchDuration, 1, 0.5f);
+            _visual.localScale = _visualScale;
+            Vector3 scale = transform.localScale;
+            Vector3 punch = new Vector3(
+                _hitPunchStrength / scale.x,
+                _hitPunchStrength / scale.y,
+                _hitPunchStrength / scale.z);
+            _hitPunch = _visual.DOPunchScale(punch, _hitPunchDuration, 1, 0.5f);
         }
 
         private bool TryGetBounceVelocity(Collision collision, out Vector3 bounceVelocity)

@@ -20,6 +20,11 @@ namespace SlipUp
             _rigidbody.interpolation = RigidbodyInterpolation.Interpolate;
         }
 
+        internal void AllowReport()
+        {
+            _isReported = false;
+        }
+
         private void OnDestroy()
         {
             _arena = null;
@@ -28,6 +33,16 @@ namespace SlipUp
 
         private void FixedUpdate()
         {
+            if (_arena == null)
+            {
+                return;
+            }
+
+            if (_runner.IsFrozen)
+            {
+                return;
+            }
+
             if (_isReported)
             {
                 return;

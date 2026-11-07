@@ -5,6 +5,7 @@ namespace SlipUp
     public class CameraFollow : MonoBehaviour
     {
         private const float DirectionEpsilonSqr = 0.0001f;
+        private const float EmbeddedHitDistance = 0.001f;
 
         [SerializeField] private float _distance = 8.75f;
         [SerializeField] private float _pitch = 32f;
@@ -144,17 +145,27 @@ namespace SlipUp
                     continue;
                 }
 
+                if (_hits[i].distance <= EmbeddedHitDistance)
+                {
+                    continue;
+                }
+
+                if (Vector3.Dot(_hits[i].normal, direction) > 0f)
+                {
+                    continue;
+                }
+
                 float surfaceDistance = _hits[i].distance - _collisionPadding;
+
+                if (surfaceDistance < 0f)
+                {
+                    surfaceDistance = 0f;
+                }
 
                 if (surfaceDistance < allowedDistance)
                 {
                     allowedDistance = surfaceDistance;
                 }
-            }
-
-            if (allowedDistance < _minDistance)
-            {
-                allowedDistance = _minDistance;
             }
 
             return origin + direction * allowedDistance;

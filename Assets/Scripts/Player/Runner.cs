@@ -18,6 +18,8 @@ namespace SlipUp
 
         internal bool IsControlEnabled => _mover.IsControlEnabled;
 
+        internal bool IsFrozen => _mover.IsFrozen;
+
         internal void Initialize(RunModel model, Arena arena, Transform cameraTransform)
         {
             _mover.Initialize(model, cameraTransform);
@@ -54,6 +56,7 @@ namespace SlipUp
         internal void Release()
         {
             _mover.Release();
+            _respawn.AllowReport();
         }
 
         internal void NotifyFell()
