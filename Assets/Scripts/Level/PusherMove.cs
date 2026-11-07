@@ -5,7 +5,6 @@ namespace SlipUp
 {
     public class PusherMove : Pusher
     {
-        [SerializeField] private Rigidbody _rigidbody;
         [SerializeField] private Transform _pointA;
         [SerializeField] private Transform _pointB;
         [SerializeField] private float _travelDuration = 2.5f;
@@ -14,23 +13,17 @@ namespace SlipUp
 
         private void OnEnable()
         {
-            _rigidbody.position = _pointA.position;
-            _move = _rigidbody
+            transform.position = _pointA.position;
+            _move = transform
                 .DOMove(_pointB.position, _travelDuration)
                 .SetEase(Ease.Linear)
                 .SetLoops(-1, LoopType.Yoyo)
                 .SetUpdate(UpdateType.Fixed);
         }
 
-        private void OnDisable()
+        protected override void OnDisable()
         {
             base.OnDisable();
-
-            if (_move == null)
-            {
-                return;
-            }
-
             _move.Kill();
             _move = null;
         }

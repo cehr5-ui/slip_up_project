@@ -5,14 +5,16 @@ namespace SlipUp
 {
     public class PlayerCollector : MonoBehaviour
     {
-        [SerializeField] private MeshRenderer _meshRenderer;
+        private static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
+
+        [SerializeField] private SkinnedMeshRenderer _skinnedMeshRenderer;
         [SerializeField] private PlayerAudio _audio;
         [SerializeField] private float _flashDuration = 0.15f;
 
         private Level _level;
         private int _score;
-        private Material _material;
-        private Color _originalColor;
+        private Material[] _materials;
+        private Color[] _originalColors;
         private WaitForSeconds _flashDelay;
         private Coroutine _flash;
         private bool _isCollecting = true;
@@ -26,8 +28,14 @@ namespace SlipUp
 
         private void Awake()
         {
-            _material = _meshRenderer.material;
-            _originalColor = _material.color;
+            _materials = _skinnedMeshRenderer.materials;
+            _originalColors = new Color[_materials.Length];
+
+            for (int i = 0; i < _materials.Length; i++)
+            {
+                _originalColors[i] = GetMaterialColor(_materials[i]);
+            }
+
             _flashDelay = new WaitForSeconds(_flashDuration);
         }
 
@@ -36,7 +44,15 @@ namespace SlipUp
             _level = null;
             _flash = null;
             _flashDelay = null;
-            Destroy(_material);
+
+            for (int i = 0; i < _materials.Length; i++)
+            {
+                Destroy(_materials[i]);
+                _materials[i] = null;
+            }
+
+            _materials = null;
+            _originalColors = null;
         }
 
         private void OnTriggerEnter(Collider other)
@@ -74,11 +90,30 @@ namespace SlipUp
             _isCollecting = true;
         }
 
+        private static Color GetMaterialColor(Material material)
+        {
+            if (material.HasProperty(BaseColorId))
+            {
+                return material.GetColor(BaseColorId);
+            }
+
+            return material.color;
+        }
+
+        private static void SetMaterialColor(Material material, Color color)
+        {
+            if (material.HasProperty(BaseColorId))
+            {
+                material.SetColor(BaseColorId, color);
+            }
+
+            material.color = color;
+        }
+
         private void Flash()
         {
             StopFlash();
-            _material.color = Color.white;
-            _flash = StartCoroutine(RestoreColor());
+            _flash = StartCoroutine(PlayFlash());
         }
 
         private void StopFlash()
@@ -89,14 +124,31 @@ namespace SlipUp
                 _flash = null;
             }
 
-            _material.color = _originalColor;
+            RestoreColors();
         }
 
-        private IEnumerator RestoreColor()
+        private IEnumerator PlayFlash()
         {
+            SetColors(Color.white);
             yield return _flashDelay;
-            _material.color = _originalColor;
+            RestoreColors();
             _flash = null;
+        }
+
+        private void SetColors(Color color)
+        {
+            for (int i = 0; i < _materials.Length; i++)
+            {
+                SetMaterialColor(_materials[i], color);
+            }
+        }
+
+        private void RestoreColors()
+        {
+            for (int i = 0; i < _materials.Length; i++)
+            {
+                SetMaterialColor(_materials[i], _originalColors[i]);
+            }
         }
     }
 }

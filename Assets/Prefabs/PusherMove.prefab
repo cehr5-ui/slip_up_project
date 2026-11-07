@@ -12,7 +12,6 @@ GameObject:
   - component: {fileID: 6089756439319750242}
   - component: {fileID: 7246847790694294137}
   - component: {fileID: 6678605057573677099}
-  - component: {fileID: 2952564036204530068}
   - component: {fileID: 796550400536682114}
   m_Layer: 0
   m_Name: PusherMove
@@ -110,33 +109,6 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!54 &2952564036204530068
-Rigidbody:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 496647566950242748}
-  serializedVersion: 4
-  m_Mass: 1
-  m_Drag: 0
-  m_AngularDrag: 0.05
-  m_CenterOfMass: {x: 0, y: 0, z: 0}
-  m_InertiaTensor: {x: 1, y: 1, z: 1}
-  m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ImplicitCom: 1
-  m_ImplicitTensor: 1
-  m_UseGravity: 0
-  m_IsKinematic: 1
-  m_Interpolate: 1
-  m_Constraints: 0
-  m_CollisionDetection: 3
 --- !u!114 &796550400536682114
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -149,7 +121,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0b801320ef220c348939d87ac332f910, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _rigidbody: {fileID: 2952564036204530068}
   _pointA: {fileID: 6368341202737925047}
   _pointB: {fileID: 1425274248920188572}
   _travelDuration: 2.5

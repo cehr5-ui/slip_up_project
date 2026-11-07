@@ -196,7 +196,7 @@ namespace SlipUp
 
             if (_isDashing)
             {
-                ApplyDash();
+                ApplyDash(maxSpeed);
                 return;
             }
 
@@ -387,20 +387,25 @@ namespace SlipUp
             return forward * _planarInput.z + right * _planarInput.x;
         }
 
-        private void ApplyDash()
+        private void ApplyDash(float maxSpeed)
         {
             float step = _dashSpeed * Time.fixedDeltaTime;
 
             if (step >= _dashDistanceLeft)
             {
-                _rigidbody.linearVelocity = new Vector3(_dashDirection.x * _dashSpeed, 0f, _dashDirection.z * _dashSpeed);
                 _dashDistanceLeft = 0f;
                 _isDashing = false;
-                return;
+            }
+            else
+            {
+                _dashDistanceLeft -= step;
             }
 
-            _dashDistanceLeft -= step;
-            _rigidbody.linearVelocity = new Vector3(_dashDirection.x * _dashSpeed, 0f, _dashDirection.z * _dashSpeed);
+            Vector3 wishVelocity = GetWishDirection() * maxSpeed;
+            Vector3 alongDash = Vector3.Project(wishVelocity, _dashDirection);
+            Vector3 lateralVelocity = wishVelocity - alongDash;
+            Vector3 planarVelocity = _dashDirection * _dashSpeed + lateralVelocity;
+            _rigidbody.linearVelocity = new Vector3(planarVelocity.x, 0f, planarVelocity.z);
         }
 
         private void BeginDashPass()

@@ -9,9 +9,7 @@ namespace SlipUp
         private const int FallLimit = 3;
         private const float CountStepDuration = 1f;
         private const float FallFreezeDuration = 1f;
-        private const string CountThree = "3";
-        private const string CountTwo = "2";
-        private const string CountOne = "1";
+        private const int CountdownFrom = 3;
         private const string StartMessage = "Поехали";
 
         [SerializeField] private Level _level;
@@ -257,12 +255,12 @@ namespace SlipUp
 
         private IEnumerator Countdown()
         {
-            _scoreView.SetMessage(CountThree);
-            yield return _countStep;
-            _scoreView.SetMessage(CountTwo);
-            yield return _countStep;
-            _scoreView.SetMessage(CountOne);
-            yield return _countStep;
+            for (int count = CountdownFrom; count > 0; count--)
+            {
+                _scoreView.SetMessage(count.ToString());
+                yield return _countStep;
+            }
+
             _scoreView.SetMessage(StartMessage);
             StartRunning();
             yield return _countStep;

@@ -25,7 +25,7 @@ namespace SlipUp
             _scale = transform.localScale;
         }
 
-        protected void OnDisable()
+        protected virtual void OnDisable()
         {
             if (_hitPunch == null)
             {
