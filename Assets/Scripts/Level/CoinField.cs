@@ -4,7 +4,7 @@ using UnityEngine.Pool;
 
 namespace SlipUp
 {
-    public class CoinSpawner : MonoBehaviour
+    public class CoinField : MonoBehaviour
     {
         [SerializeField] private Coin _coinPrefab;
         [SerializeField] private Transform[] _points;
@@ -13,8 +13,6 @@ namespace SlipUp
         private ObjectPool<Coin> _pool;
         private Transform _point;
 
-        public int CoinCount => _points.Length;
-
         private void Awake()
         {
             _pool = new ObjectPool<Coin>(CreateCoin, OnGetCoin, OnReleaseCoin, null, true, _points.Length);
@@ -22,7 +20,7 @@ namespace SlipUp
 
         private void Start()
         {
-            RespawnCoins();
+            Restore();
         }
 
         private void OnDestroy()
@@ -51,7 +49,7 @@ namespace SlipUp
             }
         }
 
-        public void RespawnCoins()
+        internal void Restore()
         {
             ReleaseCoins();
             SpawnCoins();

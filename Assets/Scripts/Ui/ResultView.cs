@@ -13,35 +13,27 @@ namespace SlipUp
         private const string BestTimeFormat = "Лучшее: {0:00}:{1:00}.{2:000}";
         private const string BestTimeMissing = "Лучшее: —";
 
+        internal event Action AgainPressed;
+        internal event Action MenuPressed;
+
         [SerializeField] private TextMeshProUGUI _titleLabel;
         [SerializeField] private TextMeshProUGUI _timeLabel;
         [SerializeField] private TextMeshProUGUI _bestTimeLabel;
         [SerializeField] private Button _againButton;
         [SerializeField] private Button _menuButton;
 
-        private RunFlow _runFlow;
+        private RunModel _model;
 
-        internal void Initialize(RunFlow runFlow)
+        internal void Initialize(RunModel model)
         {
-            _runFlow = runFlow;
-        }
-
-        internal void ShowFinish(TimeSpan duration, bool hasBestTime, float bestTime)
-        {
-            _titleLabel.text = FinishTitle;
-            ShowTimes(duration, hasBestTime, bestTime);
-        }
-
-        internal void ShowFall(TimeSpan duration, bool hasBestTime, float bestTime)
-        {
-            _titleLabel.text = FallTitle;
-            ShowTimes(duration, hasBestTime, bestTime);
+            _model = model;
         }
 
         private void OnEnable()
         {
             _againButton.onClick.AddListener(OnAgainClicked);
             _menuButton.onClick.AddListener(OnMenuClicked);
+            ShowCurrent();
         }
 
         private void OnDisable()
@@ -52,7 +44,23 @@ namespace SlipUp
 
         private void OnDestroy()
         {
-            _runFlow = null;
+            AgainPressed = null;
+            MenuPressed = null;
+            _model = null;
+        }
+
+        private void ShowCurrent()
+        {
+            if (_model.IsFinish)
+            {
+                _titleLabel.text = FinishTitle;
+            }
+            else
+            {
+                _titleLabel.text = FallTitle;
+            }
+
+            ShowTimes(_model.Time, _model.HasBestTime, _model.BestTime);
         }
 
         private void ShowTimes(TimeSpan duration, bool hasBestTime, float bestTime)
@@ -79,12 +87,12 @@ namespace SlipUp
 
         private void OnAgainClicked()
         {
-            _runFlow.Play();
+            AgainPressed?.Invoke();
         }
 
         private void OnMenuClicked()
         {
-            _runFlow.OpenMenu();
+            MenuPressed?.Invoke();
         }
     }
 }

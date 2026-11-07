@@ -39,6 +39,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 4267685485497823775, guid: 3c22d51b30de0e54993eda2ab6edafad, type: 3}
+      propertyPath: _coinField
+      value: 
+      objectReference: {fileID: 7912818407758648695}
     - target: {fileID: 4713659992376517295, guid: 3c22d51b30de0e54993eda2ab6edafad, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0
@@ -96,3 +100,14 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 4713659992376517295, guid: 3c22d51b30de0e54993eda2ab6edafad, type: 3}
   m_PrefabInstance: {fileID: 4826796948179603307}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &7912818407758648695 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 3401273433530505756, guid: 3c22d51b30de0e54993eda2ab6edafad, type: 3}
+  m_PrefabInstance: {fileID: 4826796948179603307}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7c1b9f1ddadf6ee4f84823684fc14868, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 

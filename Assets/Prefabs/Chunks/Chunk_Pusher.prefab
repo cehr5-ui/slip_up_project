@@ -220,6 +220,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _entry: {fileID: 8942119943194473862}
   _exit: {fileID: 7014828186213667449}
+  _coinField: {fileID: 0}
+  _finishGate: {fileID: 0}
 --- !u!1001 &4751637198908771868
 PrefabInstance:
   m_ObjectHideFlags: 0

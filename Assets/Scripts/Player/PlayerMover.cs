@@ -27,9 +27,9 @@ namespace SlipUp
         [SerializeField] private float _bounceDuration = 0.15f;
         [SerializeField] private float _groundCheckDistance = 0.2f;
         [SerializeField] private float _coyoteDuration = 0.15f;
-        [SerializeField] private PlayerCollector _collector;
 
-        private Level _level;
+        private RunModel _model;
+        private Transform _cameraTransform;
         private Vector3 _planarInput;
         private Vector3 _dashDirection;
         private bool _isJumpRequested;
@@ -88,18 +88,14 @@ namespace SlipUp
             }
         }
 
-        internal void Initialize(Level level)
+        internal void Initialize(RunModel model, Transform cameraTransform)
         {
-            _level = level;
+            _model = model;
+            _cameraTransform = cameraTransform;
         }
 
         private void Awake()
         {
-            if (_rigidbody == null)
-            {
-                _rigidbody = GetComponent<Rigidbody>();
-            }
-
             _rigidbody.freezeRotation = true;
             _rigidbody.interpolation = RigidbodyInterpolation.Interpolate;
             _capsuleId = _capsule.GetInstanceID();
@@ -129,7 +125,8 @@ namespace SlipUp
             ClearTouchingDashWalls();
             Destroy(_slideMaterial);
             _slideMaterial = null;
-            _level = null;
+            _model = null;
+            _cameraTransform = null;
         }
 
         private void Update()
@@ -144,7 +141,7 @@ namespace SlipUp
                 }
             }
 
-            _level.ShowDash(IsDashReady, _dashCooldownLeft);
+            _model.SetDash(IsDashReady, _dashCooldownLeft);
 
             if (IsControlEnabled == false)
             {
@@ -185,7 +182,7 @@ namespace SlipUp
                 return;
             }
 
-            float coinBonus = 1f + _collector.Score * SpeedPerCoin;
+            float coinBonus = 1f + _model.Score * SpeedPerCoin;
             float maxSpeed = _moveSpeed * coinBonus;
 
             if (_isDashRequested)
@@ -382,8 +379,8 @@ namespace SlipUp
 
         private Vector3 GetWishDirection()
         {
-            Vector3 forward = Vector3.ProjectOnPlane(_level.CameraTransform.forward, Vector3.up).normalized;
-            Vector3 right = Vector3.ProjectOnPlane(_level.CameraTransform.right, Vector3.up).normalized;
+            Vector3 forward = Vector3.ProjectOnPlane(_cameraTransform.forward, Vector3.up).normalized;
+            Vector3 right = Vector3.ProjectOnPlane(_cameraTransform.right, Vector3.up).normalized;
             return forward * _planarInput.z + right * _planarInput.x;
         }
 

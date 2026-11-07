@@ -532,8 +532,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c33469bbc4da9ec41b240caf8ef3d84e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _level: {fileID: 0}
-  _scoreView: {fileID: 0}
 --- !u!1001 &7634910485307065746
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -542,6 +540,14 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 4267685485497823775, guid: 3c22d51b30de0e54993eda2ab6edafad, type: 3}
+      propertyPath: _coinField
+      value: 
+      objectReference: {fileID: 5100157838616764302}
+    - target: {fileID: 4267685485497823775, guid: 3c22d51b30de0e54993eda2ab6edafad, type: 3}
+      propertyPath: _finishGate
+      value: 
+      objectReference: {fileID: 8725507415782517144}
     - target: {fileID: 4713659992376517295, guid: 3c22d51b30de0e54993eda2ab6edafad, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0
@@ -602,3 +608,14 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 4713659992376517295, guid: 3c22d51b30de0e54993eda2ab6edafad, type: 3}
   m_PrefabInstance: {fileID: 7634910485307065746}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &5100157838616764302 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 3401273433530505756, guid: 3c22d51b30de0e54993eda2ab6edafad, type: 3}
+  m_PrefabInstance: {fileID: 7634910485307065746}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7c1b9f1ddadf6ee4f84823684fc14868, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 

@@ -11,19 +11,16 @@ namespace SlipUp
         [SerializeField] private PlayerAudio _audio;
         [SerializeField] private float _flashDuration = 0.15f;
 
-        private Level _level;
-        private int _score;
+        private RunModel _model;
         private Material[] _materials;
         private Color[] _originalColors;
         private WaitForSeconds _flashDelay;
         private Coroutine _flash;
         private bool _isCollecting = true;
 
-        public int Score => _score;
-
-        internal void Initialize(Level level)
+        internal void Initialize(RunModel model)
         {
-            _level = level;
+            _model = model;
         }
 
         private void Awake()
@@ -41,7 +38,7 @@ namespace SlipUp
 
         private void OnDestroy()
         {
-            _level = null;
+            _model = null;
             _flash = null;
             _flashDelay = null;
 
@@ -62,30 +59,27 @@ namespace SlipUp
                 return;
             }
 
-            if (_level.TryTakeCoin(other) == false)
+            if (other.TryGetComponent(out Coin coin) == false)
             {
                 return;
             }
 
-            _score++;
-            _level.ShowScore(_score);
+            if (coin.TryCollect() == false)
+            {
+                return;
+            }
+
+            _model.AddScore();
             _audio.PlayCollect();
             Flash();
         }
 
-        public void ResetScore()
-        {
-            _score = 0;
-            _level.ShowScore(_score);
-            StopFlash();
-        }
-
-        public void PauseCollection()
+        internal void PauseCollection()
         {
             _isCollecting = false;
         }
 
-        public void ResumeCollection()
+        internal void ResumeCollection()
         {
             _isCollecting = true;
         }

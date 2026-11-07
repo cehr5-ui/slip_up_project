@@ -6,21 +6,24 @@ namespace SlipUp
     {
         [SerializeField] private Rigidbody _rigidbody;
 
-        private Level _level;
+        private Arena _arena;
+        private Runner _runner;
         private bool _isReported;
 
-        private bool IsOutsideLocation => _level.IsBelowArena(_rigidbody.position);
+        private bool IsOutsideLocation => _arena.IsBelowArena(_rigidbody.position);
 
-        internal void Initialize(Level level)
+        internal void Initialize(Arena arena, Runner runner)
         {
-            _level = level;
+            _arena = arena;
+            _runner = runner;
             TeleportToStart();
             _rigidbody.interpolation = RigidbodyInterpolation.Interpolate;
         }
 
         private void OnDestroy()
         {
-            _level = null;
+            _arena = null;
+            _runner = null;
         }
 
         private void FixedUpdate()
@@ -36,14 +39,14 @@ namespace SlipUp
             }
 
             _isReported = true;
-            _level.NotifyFell();
+            _runner.NotifyFell();
         }
 
-        internal void TeleportToStart()
+        private void TeleportToStart()
         {
             _isReported = false;
-            Vector3 position = _level.StartPosition;
-            Quaternion rotation = _level.StartRotation;
+            Vector3 position = _arena.StartPosition;
+            Quaternion rotation = _arena.StartRotation;
             _rigidbody.interpolation = RigidbodyInterpolation.None;
             _rigidbody.position = position;
             _rigidbody.rotation = rotation;

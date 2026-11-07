@@ -11,14 +11,8 @@ namespace SlipUp
         [SerializeField] private float _bounceMultiplier = 1f;
         [SerializeField] private float _minimumBounceSpeed = 18f;
 
-        private Level _level;
         private Vector3 _scale;
         private Tween _hitPunch;
-
-        internal void Initialize(Level level)
-        {
-            _level = level;
-        }
 
         private void Awake()
         {
@@ -37,19 +31,16 @@ namespace SlipUp
             transform.localScale = _scale;
         }
 
-        private void Start()
-        {
-            Level.Connect(this);
-        }
-
-        private void OnDestroy()
-        {
-            _level = null;
-        }
-
         private void OnCollisionEnter(Collision collision)
         {
-            if (_level.IsPlayer(collision.gameObject) == false)
+            Rigidbody body = collision.rigidbody;
+
+            if (body == null)
+            {
+                return;
+            }
+
+            if (body.TryGetComponent(out Runner runner) == false)
             {
                 return;
             }
@@ -59,7 +50,7 @@ namespace SlipUp
                 return;
             }
 
-            _level.BouncePlayer(bounceVelocity);
+            runner.Bounce(bounceVelocity);
             PlayHit();
         }
 

@@ -365,3 +365,5 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _entry: {fileID: 8942119943194473862}
   _exit: {fileID: 7014828186213667449}
+  _coinField: {fileID: 3401273433530505756}
+  _finishGate: {fileID: 0}

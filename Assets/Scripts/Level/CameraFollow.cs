@@ -16,17 +16,27 @@ namespace SlipUp
         [SerializeField] private LayerMask _collisionMask = ~0;
 
         private readonly RaycastHit[] _hits = new RaycastHit[16];
-        private Level _level;
+        private Transform _target;
         private float _yaw;
+        private bool _hasTarget;
         private bool _hasPose;
         private bool _isLookEnabled;
         private bool _isLockedToPlayer;
 
-        private Transform PlayerFocus => _level.PlayerFocus;
-
-        internal void Initialize(Level level)
+        internal void SetTarget(Transform target)
         {
-            _level = level;
+            _target = target;
+            _hasTarget = true;
+            _hasPose = false;
+        }
+
+        internal void ClearTarget()
+        {
+            _target = null;
+            _hasTarget = false;
+            _isLookEnabled = false;
+            Cursor.lockState = CursorLockMode.None;
+            Cursor.visible = true;
         }
 
         private void OnDisable()
@@ -37,12 +47,23 @@ namespace SlipUp
 
         private void OnDestroy()
         {
-            _level = null;
+            _target = null;
         }
 
         private void LateUpdate()
         {
-            Transform playerFocus = PlayerFocus;
+            if (_hasTarget == false)
+            {
+                return;
+            }
+
+            if (_target == null)
+            {
+                _hasTarget = false;
+                return;
+            }
+
+            Transform playerFocus = _target;
             Vector3 focusPosition = playerFocus.position;
 
             if (_isLookEnabled)
@@ -141,19 +162,19 @@ namespace SlipUp
 
         private bool IsOwnCollider(Transform hitTransform)
         {
-            Transform playerFocus = PlayerFocus;
+            Transform body = _target.parent;
 
-            if (hitTransform == playerFocus || hitTransform.IsChildOf(playerFocus))
+            if (body == null)
+            {
+                body = _target;
+            }
+
+            if (hitTransform == body)
             {
                 return true;
             }
 
-            if (playerFocus.IsChildOf(hitTransform))
-            {
-                return true;
-            }
-
-            return _level.IsPlayer(hitTransform.gameObject);
+            return hitTransform.IsChildOf(body);
         }
     }
 }

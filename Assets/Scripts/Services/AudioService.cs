@@ -2,6 +2,7 @@ using UnityEngine;
 
 namespace SlipUp
 {
+    [DefaultExecutionOrder(-200)]
     public class AudioService : MonoBehaviour
     {
         [SerializeField] private AudioSource _sfxSource;
@@ -11,12 +12,15 @@ namespace SlipUp
         private AudioClip _musicClip;
         private bool _isEnabled;
 
+        internal void Initialize(SaveService save)
+        {
+            SetEnabled(save.IsSoundEnabled);
+        }
+
         private void Awake()
         {
             _sfxVolume = _sfxSource.volume;
             _musicClip = _musicSource.clip;
-            SaveService save = new SaveService();
-            SetEnabled(save.IsSoundEnabled);
         }
 
         private void OnDestroy()

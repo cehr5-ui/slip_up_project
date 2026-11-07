@@ -555,6 +555,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _entry: {fileID: 8942119943194473862}
   _exit: {fileID: 7014828186213667449}
+  _coinField: {fileID: 6654672108454889377}
+  _finishGate: {fileID: 0}
 --- !u!1 &8034129300729270333
 GameObject:
   m_ObjectHideFlags: 0

@@ -203,7 +203,7 @@ Transform:
   - {fileID: 1349469754268915893}
   - {fileID: 8942119943194473862}
   - {fileID: 7014828186213667449}
-  - {fileID: 7300000000000003002}
+  - {fileID: 3884168634095190271}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &4267685485497823775
@@ -220,6 +220,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _entry: {fileID: 8942119943194473862}
   _exit: {fileID: 7014828186213667449}
+  _coinField: {fileID: 0}
+  _finishGate: {fileID: 0}
 --- !u!1001 &7300000000000003001
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -228,6 +230,22 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 4713659992376517295}
     m_Modifications:
+    - target: {fileID: 5812345678901234501, guid: 1f6d8b3a5c0e47d2a9b4e7c6f3a18052, type: 3}
+      propertyPath: m_Name
+      value: DashWall
+      objectReference: {fileID: 0}
+    - target: {fileID: 5812345678901234502, guid: 1f6d8b3a5c0e47d2a9b4e7c6f3a18052, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5812345678901234502, guid: 1f6d8b3a5c0e47d2a9b4e7c6f3a18052, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5812345678901234502, guid: 1f6d8b3a5c0e47d2a9b4e7c6f3a18052, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 5812345678901234502, guid: 1f6d8b3a5c0e47d2a9b4e7c6f3a18052, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0
@@ -268,28 +286,12 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 5812345678901234502, guid: 1f6d8b3a5c0e47d2a9b4e7c6f3a18052, type: 3}
-      propertyPath: m_LocalScale.x
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 5812345678901234502, guid: 1f6d8b3a5c0e47d2a9b4e7c6f3a18052, type: 3}
-      propertyPath: m_LocalScale.y
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 5812345678901234502, guid: 1f6d8b3a5c0e47d2a9b4e7c6f3a18052, type: 3}
-      propertyPath: m_LocalScale.z
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 5812345678901234501, guid: 1f6d8b3a5c0e47d2a9b4e7c6f3a18052, type: 3}
-      propertyPath: m_Name
-      value: DashWall
-      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 1f6d8b3a5c0e47d2a9b4e7c6f3a18052, type: 3}
---- !u!4 &7300000000000003002 stripped
+--- !u!4 &3884168634095190271 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 5812345678901234502, guid: 1f6d8b3a5c0e47d2a9b4e7c6f3a18052, type: 3}
   m_PrefabInstance: {fileID: 7300000000000003001}

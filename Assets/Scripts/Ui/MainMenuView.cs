@@ -15,29 +15,24 @@ namespace SlipUp
         private const string LastRunYesterdaySuffix = " (вчера)";
         private const string ControlsHint = "WASD — движение\nПробел — прыжок, ещё раз в воздухе\nF — рывок";
 
+        internal event Action PlayPressed;
+
         [SerializeField] private Button _playButton;
         [SerializeField] private Toggle _soundToggle;
         [SerializeField] private TextMeshProUGUI _lastRunLabel;
         [SerializeField] private TextMeshProUGUI _controlsLabel;
         [SerializeField] private AudioService _audio;
 
-        private RunFlow _runFlow;
         private SaveService _save;
 
-        internal void Initialize(RunFlow runFlow)
+        internal void Initialize(SaveService save, AudioService audio)
         {
-            _runFlow = runFlow;
-        }
-
-        private void Awake()
-        {
-            CreateSave();
-            ApplyStoredSound();
+            _save = save;
+            _audio = audio;
         }
 
         private void OnEnable()
         {
-            CreateSave();
             ApplyStoredSound();
             _playButton.onClick.AddListener(OnPlayClicked);
             _soundToggle.onValueChanged.AddListener(OnSoundChanged);
@@ -53,20 +48,10 @@ namespace SlipUp
 
         private void OnDestroy()
         {
-            _runFlow = null;
+            PlayPressed = null;
             _save = null;
             _controlsLabel = null;
             _audio = null;
-        }
-
-        private void CreateSave()
-        {
-            if (_save != null)
-            {
-                return;
-            }
-
-            _save = new SaveService();
         }
 
         private void ApplyStoredSound()
@@ -120,7 +105,7 @@ namespace SlipUp
 
         private void OnPlayClicked()
         {
-            _runFlow.Play();
+            PlayPressed?.Invoke();
         }
 
         private void OnSoundChanged(bool isEnabled)
