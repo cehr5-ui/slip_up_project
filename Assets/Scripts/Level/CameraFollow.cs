@@ -161,7 +161,11 @@ namespace SlipUp
             _follow.ShoulderOffset = Vector3.zero;
             _follow.VerticalArmLength = 0f;
             _follow.CameraSide = 0.5f;
-            _follow.CameraRadius = _collisionRadius;
+            CinemachineThirdPersonFollow.ObstacleSettings obstacles = _follow.AvoidObstacles;
+            obstacles.Enabled = true;
+            obstacles.CameraRadius = _collisionRadius;
+            obstacles.CollisionFilter = _collisionMask;
+            _follow.AvoidObstacles = obstacles;
             CameraTarget cameraTarget = _vcam.Target;
             cameraTarget.TrackingTarget = _pivot;
             cameraTarget.LookAtTarget = _pivot;

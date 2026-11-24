@@ -1,6 +1,8 @@
 using NUnit.Framework;
 using UnityEngine;
 
+using SlipUp;
+
 namespace SlipUp.Tests
 {
     public class ChunkSeamTests
