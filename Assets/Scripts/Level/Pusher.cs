@@ -20,7 +20,12 @@ namespace SlipUp
             _visualScale = _visual.localScale;
         }
 
-        protected virtual void OnDisable()
+        private void OnDisable()
+        {
+            HandleDisable();
+        }
+
+        protected virtual void HandleDisable()
         {
             if (_hitPunch == null)
             {

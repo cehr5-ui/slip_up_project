@@ -5,6 +5,7 @@ namespace SlipUp
 {
     public class PlayerCollector : MonoBehaviour
     {
+        private const int FlashCycles = 3;
         private static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
 
         [SerializeField] private SkinnedMeshRenderer _skinnedMeshRenderer;
@@ -123,8 +124,14 @@ namespace SlipUp
 
         private IEnumerator PlayFlash()
         {
-            SetColors(Color.white);
-            yield return _flashDelay;
+            for (int cycle = 0; cycle < FlashCycles; cycle++)
+            {
+                SetColors(Color.white);
+                yield return _flashDelay;
+                RestoreColors();
+                yield return _flashDelay;
+            }
+
             RestoreColors();
             _flash = null;
         }
