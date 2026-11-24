@@ -9,6 +9,7 @@ namespace SlipUp
         private const string BestTimeKey = "best_time";
         private const string IsSoundEnabledKey = "is_sound_enabled";
         private const string LastPlayedUtcKey = "last_played_utc";
+        private const string LastSeedKey = "last_seed";
 
         internal bool IsSoundEnabled => PlayerPrefs.GetInt(IsSoundEnabledKey, 1) == 1;
 
@@ -53,6 +54,24 @@ namespace SlipUp
             DateTime universalTime = lastPlayedUtc.ToUniversalTime();
             string storedDate = universalTime.ToString("o", CultureInfo.InvariantCulture);
             PlayerPrefs.SetString(LastPlayedUtcKey, storedDate);
+            PlayerPrefs.Save();
+        }
+
+        internal bool TryGetLastSeed(out int seed)
+        {
+            if (PlayerPrefs.HasKey(LastSeedKey) == false)
+            {
+                seed = 0;
+                return false;
+            }
+
+            seed = PlayerPrefs.GetInt(LastSeedKey);
+            return true;
+        }
+
+        internal void SetLastSeed(int seed)
+        {
+            PlayerPrefs.SetInt(LastSeedKey, seed);
             PlayerPrefs.Save();
         }
     }

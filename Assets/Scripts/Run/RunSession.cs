@@ -43,7 +43,6 @@ namespace SlipUp
             _countStep = new WaitForSeconds(CountStepDuration);
             _fallFreeze = new WaitForSeconds(FallFreezeDuration);
             _hasBestTime = _save.TryGetBestTime(out _bestTime);
-            _track.Initialize();
             _track.FinishReached += OnFinishReached;
         }
 
@@ -64,6 +63,7 @@ namespace SlipUp
             _isFinished = false;
             _isRunning = false;
             SetPhase(RunPhase.Countdown);
+            BuildTrack();
             PrepareAttempt();
             _countdown = StartCoroutine(Countdown());
         }
@@ -80,6 +80,7 @@ namespace SlipUp
             _fallCount = 0;
             _isRunning = false;
             _isFinished = false;
+            BuildTrack();
             PrepareAttempt();
             SetPhase(RunPhase.Menu);
         }
@@ -120,6 +121,16 @@ namespace SlipUp
             _input = null;
             _countStep = null;
             _fallFreeze = null;
+        }
+
+        private void BuildTrack()
+        {
+            int seed = UnityEngine.Random.Range(1, 1000000000);
+            _save.SetLastSeed(seed);
+            _track.Generate(seed);
+            _track.Initialize();
+            _model.SetSeed(seed);
+            _arena.Bind(_track.SpawnPosition, _track.SpawnRotation, _track.KillHeight);
         }
 
         private void PrepareAttempt()

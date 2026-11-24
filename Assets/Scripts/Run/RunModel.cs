@@ -10,6 +10,7 @@ namespace SlipUp
         internal event Action<bool, float> DashChanged;
         internal event Action<string> MessageChanged;
         internal event Action RunnerPresenceChanged;
+        internal event Action<int> SeedChanged;
 
         private int _score;
         private TimeSpan _time;
@@ -22,8 +23,11 @@ namespace SlipUp
         private bool _isFinish;
         private bool _hasBestTime;
         private float _bestTime;
+        private int _seed;
 
         internal int Score => _score;
+
+        internal int Seed => _seed;
 
         internal TimeSpan Time => _time;
 
@@ -86,6 +90,12 @@ namespace SlipUp
             _phase = phase;
         }
 
+        internal void SetSeed(int seed)
+        {
+            _seed = seed;
+            SeedChanged?.Invoke(_seed);
+        }
+
         internal void SetRunnerPresent(bool hasRunner)
         {
             if (_hasRunner == hasRunner)
@@ -112,6 +122,7 @@ namespace SlipUp
             DashChanged = null;
             MessageChanged = null;
             RunnerPresenceChanged = null;
+            SeedChanged = null;
         }
     }
 }

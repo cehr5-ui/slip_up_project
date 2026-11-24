@@ -27,5 +27,36 @@ namespace SlipUp.Tests
 
             Object.DestroyImmediate(host);
         }
+
+        [Test]
+        public void SameSeed_BuildsMatchingSeams()
+        {
+            GameObject host = new GameObject("SeedTestHost");
+            TrackGenerator generator = host.AddComponent<TrackGenerator>();
+            Chunk[] first = generator.Build(12345);
+            Vector3[] exits = new Vector3[first.Length];
+
+            for (int i = 0; i < first.Length; i++)
+            {
+                exits[i] = first[i].Exit.position;
+            }
+
+            Chunk[] second = generator.Build(12345);
+            Assert.AreEqual(exits.Length, second.Length);
+
+            for (int i = 0; i < second.Length; i++)
+            {
+                Assert.IsTrue(Vector3.Distance(exits[i], second[i].Exit.position) <= ChunkPlacement.PositionTolerance);
+            }
+
+            for (int i = 1; i < second.Length; i++)
+            {
+                Assert.IsTrue(ChunkPlacement.IsSeamAligned(second[i - 1].Exit, second[i].Entry));
+            }
+
+            Assert.GreaterOrEqual(second.Length, 10);
+            Assert.LessOrEqual(second.Length, 17);
+            Object.DestroyImmediate(host);
+        }
     }
 }
