@@ -23,5 +23,20 @@ namespace SlipUp
         {
             _audio.PlaySfx(_hitClip);
         }
+
+        public void PlayJump()
+        {
+            _audio.PlaySfx(_hitClip, 0.35f);
+        }
+
+        public void PlayDash()
+        {
+            _audio.PlaySfx(_hitClip, 0.55f);
+        }
+
+        public void PlayFinish()
+        {
+            _audio.PlaySfx(_collectClip, 0.8f);
+        }
     }
 }

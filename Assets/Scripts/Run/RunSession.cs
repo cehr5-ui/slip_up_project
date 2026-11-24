@@ -9,6 +9,7 @@ namespace SlipUp
         private const int FallLimit = 3;
         private const float CountStepDuration = 1f;
         private const float FallFreezeDuration = 1f;
+        private const float RagdollResultDelay = 1.8f;
         private const int CountdownFrom = 3;
         private const string StartMessage = "Поехали";
 
@@ -31,6 +32,8 @@ namespace SlipUp
         private bool _isRecovering;
         private WaitForSeconds _countStep;
         private WaitForSeconds _fallFreeze;
+        private WaitForSeconds _ragdollWait;
+        private Coroutine _knockout;
         private Coroutine _countdown;
         private Coroutine _fallRecover;
 
@@ -42,6 +45,7 @@ namespace SlipUp
             _camera.Initialize(input);
             _countStep = new WaitForSeconds(CountStepDuration);
             _fallFreeze = new WaitForSeconds(FallFreezeDuration);
+            _ragdollWait = new WaitForSeconds(RagdollResultDelay);
             _hasBestTime = _save.TryGetBestTime(out _bestTime);
             _track.FinishReached += OnFinishReached;
         }
@@ -104,6 +108,7 @@ namespace SlipUp
             }
 
             StopFallRecover();
+            StopKnockout();
             DetachRunner();
 
             if (_track != null)
@@ -121,6 +126,7 @@ namespace SlipUp
             _input = null;
             _countStep = null;
             _fallFreeze = null;
+            _ragdollWait = null;
         }
 
         private void BuildTrack()
@@ -166,6 +172,7 @@ namespace SlipUp
             _runner = runner;
             _runner.Released += OnRunnerReleased;
             _runner.Fell += OnRunnerFell;
+            _runner.KnockedOut += OnRunnerKnockedOut;
             _runner.Initialize(_model, _arena, _camera.transform, _input);
             _camera.SetTarget(_runner.Focus);
             _model.SetRunnerPresent(true);
@@ -184,6 +191,7 @@ namespace SlipUp
             _runner = null;
             runner.Released -= OnRunnerReleased;
             runner.Fell -= OnRunnerFell;
+            runner.KnockedOut -= OnRunnerKnockedOut;
             _camera.ClearTarget();
             _model.SetRunnerPresent(false);
         }
@@ -213,9 +221,21 @@ namespace SlipUp
             _save.SetBestTime(time);
         }
 
+        private void StopKnockout()
+        {
+            if (_knockout == null)
+            {
+                return;
+            }
+
+            StopCoroutine(_knockout);
+            _knockout = null;
+        }
+
         private void FailRun()
         {
             StopFallRecover();
+            StopKnockout();
             _isFinished = true;
             _isRunning = false;
             TimeSpan duration = DateTime.UtcNow - _runStartedAt;
@@ -227,12 +247,20 @@ namespace SlipUp
 
         private void FinishRun()
         {
+            StopKnockout();
             _isFinished = true;
             _isRunning = false;
             TimeSpan duration = DateTime.UtcNow - _runStartedAt;
             _model.SetTime(duration);
             RememberBest(duration);
+            _save.AddFinish();
             _model.SetResult(true, _hasBestTime, _bestTime);
+
+            if (_runner != null)
+            {
+                _runner.PlayFinishFx();
+            }
+
             FreezeRunner();
             SetPhase(RunPhase.Result);
         }
@@ -327,6 +355,7 @@ namespace SlipUp
 
             _runStartedAt = DateTime.UtcNow;
             _isRunning = true;
+            _save.AddRun();
             _save.SetLastPlayedUtc(_runStartedAt);
             _runner.ResumeCollection();
             _runner.BeginRun();
@@ -349,29 +378,53 @@ namespace SlipUp
                 return;
             }
 
-            if (_isRunning == false || _isRecovering)
+            if (_isRunning == false)
             {
                 return;
             }
 
-            _fallCount++;
-            ShowLives();
-            FreezeRunner();
+            runner.KnockOut(Vector3.down * 8f);
+            BeginKnockoutResult();
+        }
 
-            if (_fallCount >= FallLimit)
+        private void OnRunnerKnockedOut(Runner runner)
+        {
+            if (_runner != runner)
             {
-                FailRun();
                 return;
             }
 
-            _isRecovering = true;
-            _fallRecover = StartCoroutine(RecoverAfterFall());
+            if (_isFinished)
+            {
+                return;
+            }
+
+            BeginKnockoutResult();
+        }
+
+        private void BeginKnockoutResult()
+        {
+            if (_knockout != null)
+            {
+                return;
+            }
+
+            _camera.SetLookEnabled(false);
+            _knockout = StartCoroutine(KnockoutThenResult());
+        }
+
+        private IEnumerator KnockoutThenResult()
+        {
+            yield return _ragdollWait;
+            _knockout = null;
+            FailRun();
         }
 
         private void OnRunnerReleased(Runner runner)
         {
             runner.Released -= OnRunnerReleased;
             runner.Fell -= OnRunnerFell;
+            runner.KnockedOut -= OnRunnerKnockedOut;
 
             if (_runner != runner)
             {

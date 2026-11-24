@@ -18,6 +18,12 @@ namespace SlipUp
         private void Awake()
         {
             Screen.orientation = ScreenOrientation.LandscapeLeft;
+
+            if (GetComponent<FxPool>() == null)
+            {
+                gameObject.AddComponent<FxPool>();
+            }
+
             _save = new SaveService();
             _model = new RunModel();
             _input = new GameplayInput();

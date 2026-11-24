@@ -58,6 +58,9 @@ namespace SlipUp
         private int _touchingDashWallCount;
         private int _ignoredDashWallCount;
 
+        internal event System.Action Jumped;
+        internal event System.Action Dashed;
+
         internal bool IsControlEnabled => _isRunStarted && _isFrozen == false;
 
         internal bool IsFrozen => _isFrozen;
@@ -140,6 +143,8 @@ namespace SlipUp
             _cameraTransform = null;
             _input = null;
             _rigidbody = null;
+            Jumped = null;
+            Dashed = null;
         }
 
         private void Update()
@@ -387,6 +392,7 @@ namespace SlipUp
             Vector3 velocity = _rigidbody.linearVelocity;
             velocity.y = _jumpSpeed;
             _rigidbody.linearVelocity = velocity;
+            Jumped?.Invoke();
         }
 
         private void TryStartDash(float maxSpeed)
@@ -418,6 +424,7 @@ namespace SlipUp
             _isDashing = true;
             _dashCooldownLeft = _dashCooldown;
             BeginDashPass();
+            Dashed?.Invoke();
         }
 
         private Vector3 GetWishDirection()

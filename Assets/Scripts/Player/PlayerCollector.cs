@@ -69,6 +69,13 @@ namespace SlipUp
 
             _model.AddScore();
             _audio.PlayCollect();
+            PlayerFx fx = GetComponent<PlayerFx>();
+
+            if (fx != null)
+            {
+                fx.PlayCoin(other.transform.position);
+            }
+
             Flash();
         }
 
