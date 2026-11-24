@@ -13,16 +13,19 @@ namespace SlipUp
 
         private SaveService _save;
         private RunModel _model;
+        private GameplayInput _input;
 
         private void Awake()
         {
+            Screen.orientation = ScreenOrientation.LandscapeLeft;
             _save = new SaveService();
             _model = new RunModel();
+            _input = new GameplayInput();
             _audio.Initialize(_save);
             _menu.Initialize(_save, _audio);
-            _hud.Initialize(_model);
+            _hud.Initialize(_model, _input);
             _result.Initialize(_model);
-            _session.Initialize(_model, _save);
+            _session.Initialize(_model, _save, _input);
             _menu.PlayPressed += OnPlayPressed;
             _result.AgainPressed += OnAgainPressed;
             _result.MenuPressed += OnMenuPressed;
@@ -58,6 +61,7 @@ namespace SlipUp
             _audio = null;
             _hud = null;
             _save = null;
+            _input = null;
         }
 
         private void OnPlayPressed()

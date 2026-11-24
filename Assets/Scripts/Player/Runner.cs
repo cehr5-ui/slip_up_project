@@ -20,9 +20,9 @@ namespace SlipUp
 
         internal bool IsFrozen => _mover.IsFrozen;
 
-        internal void Initialize(RunModel model, Arena arena, Transform cameraTransform)
+        internal void Initialize(RunModel model, Arena arena, Transform cameraTransform, GameplayInput input)
         {
-            _mover.Initialize(model, cameraTransform);
+            _mover.Initialize(model, cameraTransform, input);
             _collector.Initialize(model);
             _respawn.Initialize(arena, this);
         }

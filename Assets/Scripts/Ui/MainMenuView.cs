@@ -13,7 +13,7 @@ namespace SlipUp
         private const string LastRunStampFormat = "dd.MM.yyyy, HH:mm:ss";
         private const string LastRunTodaySuffix = " (сегодня)";
         private const string LastRunYesterdaySuffix = " (вчера)";
-        private const string ControlsHint = "WASD — движение\nПробел — прыжок, ещё раз в воздухе\nF — рывок";
+        private const string ControlsHint = "Слева — движение, справа — камера\nПрыжок и рывок — кнопки справа\nКлавиатура: WASD, пробел, F";
 
         internal event Action PlayPressed;
 

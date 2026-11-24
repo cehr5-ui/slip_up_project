@@ -25,13 +25,23 @@ namespace SlipUp
         [SerializeField] private float _punchDuration = 0.35f;
 
         private RunModel _model;
+        private GameplayInput _input;
         private RectTransform _labelTransform;
         private Vector3 _labelScale;
         private Tween _punch;
 
-        internal void Initialize(RunModel model)
+        internal void Initialize(RunModel model, GameplayInput input)
         {
             _model = model;
+            _input = input;
+            MobileControlsView controls = GetComponent<MobileControlsView>();
+
+            if (controls == null)
+            {
+                controls = gameObject.AddComponent<MobileControlsView>();
+            }
+
+            controls.Initialize(_input);
         }
 
         private void Awake()
@@ -72,6 +82,7 @@ namespace SlipUp
         private void OnDestroy()
         {
             _model = null;
+            _input = null;
         }
 
         private void Refresh()

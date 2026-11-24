@@ -20,6 +20,7 @@ namespace SlipUp
 
         private RunModel _model;
         private SaveService _save;
+        private GameplayInput _input;
         private Runner _runner;
         private DateTime _runStartedAt;
         private float _bestTime;
@@ -33,10 +34,12 @@ namespace SlipUp
         private Coroutine _countdown;
         private Coroutine _fallRecover;
 
-        internal void Initialize(RunModel model, SaveService save)
+        internal void Initialize(RunModel model, SaveService save, GameplayInput input)
         {
             _model = model;
             _save = save;
+            _input = input;
+            _camera.Initialize(input);
             _countStep = new WaitForSeconds(CountStepDuration);
             _fallFreeze = new WaitForSeconds(FallFreezeDuration);
             _hasBestTime = _save.TryGetBestTime(out _bestTime);
@@ -114,6 +117,7 @@ namespace SlipUp
             _screens = null;
             _model = null;
             _save = null;
+            _input = null;
             _countStep = null;
             _fallFreeze = null;
         }
@@ -151,7 +155,7 @@ namespace SlipUp
             _runner = runner;
             _runner.Released += OnRunnerReleased;
             _runner.Fell += OnRunnerFell;
-            _runner.Initialize(_model, _arena, _camera.transform);
+            _runner.Initialize(_model, _arena, _camera.transform, _input);
             _camera.SetTarget(_runner.Focus);
             _model.SetRunnerPresent(true);
         }

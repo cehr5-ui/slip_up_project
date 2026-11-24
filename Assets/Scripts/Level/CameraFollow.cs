@@ -1,7 +1,9 @@
+using Unity.Cinemachine;
 using UnityEngine;
 
 namespace SlipUp
 {
+    [DefaultExecutionOrder(-10)]
     public class CameraFollow : MonoBehaviour
     {
         private const float DirectionEpsilonSqr = 0.0001f;
@@ -11,24 +13,40 @@ namespace SlipUp
         [SerializeField] private float _pitch = 32f;
         [SerializeField] private float _lookHeight = 1.1f;
         [SerializeField] private float _yawSpeed = 2.5f;
+        [SerializeField] private float _pitchSpeed = 2f;
+        [SerializeField] private float _stickYawSpeed = 120f;
+        [SerializeField] private float _stickPitchSpeed = 80f;
+        [SerializeField] private float _minPitch = -10f;
+        [SerializeField] private float _maxPitch = 70f;
         [SerializeField] private float _collisionRadius = 0.3f;
         [SerializeField] private float _collisionPadding = 0.15f;
         [SerializeField] private float _minDistance = 1.15f;
         [SerializeField] private LayerMask _collisionMask = ~0;
 
         private readonly RaycastHit[] _hits = new RaycastHit[16];
+        private GameplayInput _input;
         private Transform _target;
+        private Transform _pivot;
+        private CinemachineCamera _vcam;
+        private CinemachineThirdPersonFollow _follow;
         private float _yaw;
+        private float _currentPitch;
         private bool _hasTarget;
         private bool _hasPose;
         private bool _isLookEnabled;
         private bool _isLockedToPlayer;
+
+        internal void Initialize(GameplayInput input)
+        {
+            _input = input;
+        }
 
         internal void SetTarget(Transform target)
         {
             _target = target;
             _hasTarget = true;
             _hasPose = false;
+            BindVirtualCamera();
         }
 
         internal void ClearTarget()
@@ -36,8 +54,15 @@ namespace SlipUp
             _target = null;
             _hasTarget = false;
             _isLookEnabled = false;
+            BindVirtualCamera();
             Cursor.lockState = CursorLockMode.None;
             Cursor.visible = true;
+        }
+
+        private void Awake()
+        {
+            _currentPitch = _pitch;
+            EnsureCinemachine();
         }
 
         private void OnDisable()
@@ -49,6 +74,20 @@ namespace SlipUp
         private void OnDestroy()
         {
             _target = null;
+            _input = null;
+            _follow = null;
+
+            if (_vcam != null)
+            {
+                Destroy(_vcam.gameObject);
+                _vcam = null;
+            }
+
+            if (_pivot != null)
+            {
+                Destroy(_pivot.gameObject);
+                _pivot = null;
+            }
         }
 
         private void LateUpdate()
@@ -61,38 +100,28 @@ namespace SlipUp
             if (_target == null)
             {
                 _hasTarget = false;
+                BindVirtualCamera();
                 return;
             }
 
             Transform playerFocus = _target;
-            Vector3 focusPosition = playerFocus.position;
-
-            if (_isLookEnabled)
-            {
-                Cursor.lockState = CursorLockMode.Locked;
-                Cursor.visible = false;
-            }
-            else
-            {
-                Cursor.lockState = CursorLockMode.None;
-                Cursor.visible = true;
-            }
+            UpdateCursor();
 
             if (_hasPose == false || _isLockedToPlayer)
             {
                 _yaw = GetPlanarYaw(playerFocus.forward);
+                _currentPitch = _pitch;
                 _hasPose = true;
             }
             else if (_isLookEnabled)
             {
-                _yaw += Input.GetAxis("Mouse X") * _yawSpeed;
+                ApplyLook();
             }
 
-            Quaternion rotation = Quaternion.Euler(_pitch, _yaw, 0f);
-            Vector3 lookPosition = focusPosition + Vector3.up * _lookHeight;
-            Vector3 desiredPosition = lookPosition - rotation * Vector3.forward * _distance;
-            Vector3 position = KeepOutOfSurfaces(lookPosition, desiredPosition);
-            transform.SetPositionAndRotation(position, rotation);
+            Quaternion rotation = Quaternion.Euler(_currentPitch, _yaw, 0f);
+            Vector3 lookPosition = playerFocus.position + Vector3.up * _lookHeight;
+            _pivot.SetPositionAndRotation(lookPosition, rotation);
+            _follow.CameraDistance = KeepDistance(lookPosition, lookPosition - rotation * Vector3.forward * _distance);
         }
 
         internal void LockToPlayer()
@@ -111,6 +140,85 @@ namespace SlipUp
             _isLookEnabled = isEnabled;
         }
 
+        private void EnsureCinemachine()
+        {
+            if (GetComponent<CinemachineBrain>() == null)
+            {
+                gameObject.AddComponent<CinemachineBrain>();
+            }
+
+            if (_pivot != null)
+            {
+                return;
+            }
+
+            GameObject pivotObject = new GameObject("CinemachinePivot");
+            _pivot = pivotObject.transform;
+            GameObject vcamObject = new GameObject("RunnerCinemachineCamera");
+            _vcam = vcamObject.AddComponent<CinemachineCamera>();
+            _follow = vcamObject.AddComponent<CinemachineThirdPersonFollow>();
+            _follow.CameraDistance = _distance;
+            _follow.ShoulderOffset = Vector3.zero;
+            _follow.VerticalArmLength = 0f;
+            _follow.CameraSide = 0.5f;
+            _follow.CameraRadius = _collisionRadius;
+            CameraTarget cameraTarget = _vcam.Target;
+            cameraTarget.TrackingTarget = _pivot;
+            cameraTarget.LookAtTarget = _pivot;
+            cameraTarget.CustomLookAtTarget = true;
+            _vcam.Target = cameraTarget;
+        }
+
+        private void BindVirtualCamera()
+        {
+            if (_vcam == null)
+            {
+                return;
+            }
+
+            _vcam.enabled = _hasTarget && _target != null;
+        }
+
+        private void UpdateCursor()
+        {
+            bool lockCursor = _isLookEnabled && Input.touchCount == 0 && HasLookStick() == false;
+
+            if (lockCursor)
+            {
+                Cursor.lockState = CursorLockMode.Locked;
+                Cursor.visible = false;
+                return;
+            }
+
+            Cursor.lockState = CursorLockMode.None;
+            Cursor.visible = true;
+        }
+
+        private void ApplyLook()
+        {
+            _yaw += Input.GetAxis("Mouse X") * _yawSpeed;
+            _currentPitch -= Input.GetAxis("Mouse Y") * _pitchSpeed;
+
+            if (HasLookStick())
+            {
+                Vector2 stick = _input.LookStick;
+                _yaw += stick.x * _stickYawSpeed * Time.deltaTime;
+                _currentPitch -= stick.y * _stickPitchSpeed * Time.deltaTime;
+            }
+
+            _currentPitch = Mathf.Clamp(_currentPitch, _minPitch, _maxPitch);
+        }
+
+        private bool HasLookStick()
+        {
+            if (_input == null)
+            {
+                return false;
+            }
+
+            return _input.LookStick.sqrMagnitude > 0.0001f;
+        }
+
         private static float GetPlanarYaw(Vector3 direction)
         {
             direction.y = 0f;
@@ -123,14 +231,14 @@ namespace SlipUp
             return Mathf.Atan2(direction.x, direction.z) * Mathf.Rad2Deg;
         }
 
-        private Vector3 KeepOutOfSurfaces(Vector3 origin, Vector3 desiredPosition)
+        private float KeepDistance(Vector3 origin, Vector3 desiredPosition)
         {
             Vector3 direction = desiredPosition - origin;
             float distance = direction.magnitude;
 
             if (distance < _minDistance)
             {
-                return origin + direction.normalized * _minDistance;
+                return _minDistance;
             }
 
             direction /= distance;
@@ -168,7 +276,12 @@ namespace SlipUp
                 }
             }
 
-            return origin + direction * allowedDistance;
+            if (allowedDistance < _minDistance)
+            {
+                allowedDistance = _minDistance;
+            }
+
+            return allowedDistance;
         }
 
         private bool IsOwnCollider(Transform hitTransform)
