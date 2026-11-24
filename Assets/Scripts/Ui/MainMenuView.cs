@@ -24,6 +24,7 @@ namespace SlipUp
         [SerializeField] private AudioService _audio;
 
         private SaveService _save;
+        private Button _skinButton;
 
         internal void Initialize(SaveService save, AudioService audio)
         {
@@ -31,10 +32,16 @@ namespace SlipUp
             _audio = audio;
         }
 
+        private void Awake()
+        {
+            _skinButton = CreateSkinButton();
+        }
+
         private void OnEnable()
         {
             ApplyStoredSound();
             _playButton.onClick.AddListener(OnPlayClicked);
+            _skinButton.onClick.AddListener(OnSkinClicked);
             _soundToggle.onValueChanged.AddListener(OnSoundChanged);
             ShowLastPlayed();
             ShowControls();
@@ -43,6 +50,7 @@ namespace SlipUp
         private void OnDisable()
         {
             _playButton.onClick.RemoveListener(OnPlayClicked);
+            _skinButton.onClick.RemoveListener(OnSkinClicked);
             _soundToggle.onValueChanged.RemoveListener(OnSoundChanged);
         }
 
@@ -52,6 +60,21 @@ namespace SlipUp
             _save = null;
             _controlsLabel = null;
             _audio = null;
+            _skinButton = null;
+        }
+
+        private Button CreateSkinButton()
+        {
+            GameObject buttonObject = Instantiate(_playButton.gameObject, _playButton.transform.parent);
+            buttonObject.name = "SkinButton";
+            RectTransform playRect = _playButton.GetComponent<RectTransform>();
+            RectTransform skinRect = buttonObject.GetComponent<RectTransform>();
+            skinRect.anchoredPosition = playRect.anchoredPosition + new Vector2(0f, -90f);
+            TextMeshProUGUI label = buttonObject.GetComponentInChildren<TextMeshProUGUI>();
+            label.text = "Скин";
+            Button button = buttonObject.GetComponent<Button>();
+            button.onClick.RemoveAllListeners();
+            return button;
         }
 
         private void ApplyStoredSound()
@@ -106,6 +129,11 @@ namespace SlipUp
         private void OnPlayClicked()
         {
             PlayPressed?.Invoke();
+        }
+
+        private void OnSkinClicked()
+        {
+            CharacterSkin.Cycle();
         }
 
         private void OnSoundChanged(bool isEnabled)

@@ -64,6 +64,16 @@ namespace SlipUp
             Fell?.Invoke(this);
         }
 
+        private void Awake()
+        {
+            if (GetComponent<CharacterSkin>() != null)
+            {
+                return;
+            }
+
+            gameObject.AddComponent<CharacterSkin>();
+        }
+
         private void OnDestroy()
         {
             Released?.Invoke(this);

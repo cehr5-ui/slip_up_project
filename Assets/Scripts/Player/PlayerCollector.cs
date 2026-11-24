@@ -26,15 +26,20 @@ namespace SlipUp
 
         private void Awake()
         {
-            _materials = _skinnedMeshRenderer.materials;
-            _originalColors = new Color[_materials.Length];
+            _flashDelay = new WaitForSeconds(_flashDuration);
+            CaptureMaterials();
+        }
 
-            for (int i = 0; i < _materials.Length; i++)
+        internal void RefreshColors()
+        {
+            if (_skinnedMeshRenderer == null)
             {
-                _originalColors[i] = GetMaterialColor(_materials[i]);
+                return;
             }
 
-            _flashDelay = new WaitForSeconds(_flashDuration);
+            StopFlash();
+            ReleaseMaterials();
+            CaptureMaterials();
         }
 
         private void OnDestroy()
@@ -42,15 +47,7 @@ namespace SlipUp
             _model = null;
             _flash = null;
             _flashDelay = null;
-
-            for (int i = 0; i < _materials.Length; i++)
-            {
-                Destroy(_materials[i]);
-                _materials[i] = null;
-            }
-
-            _materials = null;
-            _originalColors = null;
+            ReleaseMaterials();
         }
 
         private void OnTriggerEnter(Collider other)
@@ -111,6 +108,34 @@ namespace SlipUp
             _flash = StartCoroutine(PlayFlash());
         }
 
+        private void CaptureMaterials()
+        {
+            _materials = _skinnedMeshRenderer.materials;
+            _originalColors = new Color[_materials.Length];
+
+            for (int i = 0; i < _materials.Length; i++)
+            {
+                _originalColors[i] = GetMaterialColor(_materials[i]);
+            }
+        }
+
+        private void ReleaseMaterials()
+        {
+            if (_materials == null)
+            {
+                return;
+            }
+
+            for (int i = 0; i < _materials.Length; i++)
+            {
+                Destroy(_materials[i]);
+                _materials[i] = null;
+            }
+
+            _materials = null;
+            _originalColors = null;
+        }
+
         private void StopFlash()
         {
             if (_flash != null)
@@ -138,6 +163,11 @@ namespace SlipUp
 
         private void SetColors(Color color)
         {
+            if (_materials == null)
+            {
+                return;
+            }
+
             for (int i = 0; i < _materials.Length; i++)
             {
                 SetMaterialColor(_materials[i], color);
@@ -146,6 +176,11 @@ namespace SlipUp
 
         private void RestoreColors()
         {
+            if (_materials == null)
+            {
+                return;
+            }
+
             for (int i = 0; i < _materials.Length; i++)
             {
                 SetMaterialColor(_materials[i], _originalColors[i]);
