@@ -1,5 +1,6 @@
 using Unity.Collections;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 namespace SlipUp
 {
@@ -15,7 +16,6 @@ namespace SlipUp
         private const int DashWallTouchCapacity = 4;
         internal const int DashWallLayerIndex = 6;
 
-        [SerializeField] private Rigidbody _rigidbody;
         [SerializeField] private CapsuleCollider _capsule;
         [SerializeField] private float _moveSpeed = 6f;
         [SerializeField] private float _acceleration = 20f;
@@ -30,6 +30,8 @@ namespace SlipUp
 
         private RunModel _model;
         private Transform _cameraTransform;
+        private GameplayInput _input;
+        private Rigidbody _rigidbody;
         private Vector3 _planarInput;
         private Vector3 _dashDirection;
         private bool _isJumpRequested;
@@ -57,9 +59,16 @@ namespace SlipUp
         private int _touchingDashWallCount;
         private int _ignoredDashWallCount;
 
+        internal event System.Action Jumped;
+        internal event System.Action Dashed;
+
         internal bool IsControlEnabled => _isRunStarted && _isFrozen == false;
 
         internal bool IsFrozen => _isFrozen;
+
+        internal bool IsDashing => _isDashing;
+
+        internal bool IsGrounded => _isGrounded;
 
         private bool IsDashReady => _dashCooldownLeft <= 0f;
 
@@ -91,15 +100,17 @@ namespace SlipUp
             }
         }
 
-        internal void Initialize(RunModel model, Transform cameraTransform)
+        internal void Initialize(RunModel model, Transform cameraTransform, GameplayInput input)
         {
             _model = model;
             _cameraTransform = cameraTransform;
+            _input = input;
             _isReady = true;
         }
 
         private void Awake()
         {
+            _rigidbody = GetComponent<Rigidbody>();
             _rigidbody.freezeRotation = true;
             _rigidbody.interpolation = RigidbodyInterpolation.Interpolate;
             _capsuleId = _capsule.GetInstanceID();
@@ -129,13 +140,18 @@ namespace SlipUp
             ClearTouchingDashWalls();
             Destroy(_slideMaterial);
             _slideMaterial = null;
+            _isReady = false;
             _model = null;
             _cameraTransform = null;
+            _input = null;
+            _rigidbody = null;
+            Jumped = null;
+            Dashed = null;
         }
 
         private void Update()
         {
-            if (_isReady == false)
+            if (_isReady == false || _model == null)
             {
                 return;
             }
@@ -162,17 +178,15 @@ namespace SlipUp
 
             _planarInput = ReadPlanarInput();
 
-            if (Input.GetKeyDown(KeyCode.F))
+            if (KeyboardMouse.WasPressed(Key.F) || ConsumeDash())
             {
                 _isDashRequested = true;
             }
 
-            if (Input.GetKeyDown(KeyCode.Space) == false)
+            if (KeyboardMouse.WasPressed(Key.Space) || ConsumeJump())
             {
-                return;
+                _isJumpRequested = true;
             }
-
-            _isJumpRequested = true;
         }
 
         private void FixedUpdate()
@@ -284,16 +298,44 @@ namespace SlipUp
 
         private Vector3 ReadPlanarInput()
         {
-            float horizontal = Input.GetAxisRaw("Horizontal");
-            float vertical = Input.GetAxisRaw("Vertical");
-            Vector3 inputDirection = new Vector3(horizontal, 0f, vertical);
+            Vector2 move = Vector2.zero;
 
-            if (inputDirection.sqrMagnitude > 1f)
+            if (_input != null)
             {
-                inputDirection.Normalize();
+                move = _input.Move;
             }
 
-            return inputDirection;
+            if (move.sqrMagnitude <= 0.0001f)
+            {
+                move = KeyboardMouse.PlanarAxes();
+            }
+
+            if (move.sqrMagnitude > 1f)
+            {
+                move.Normalize();
+            }
+
+            return new Vector3(move.x, 0f, move.y);
+        }
+
+        private bool ConsumeJump()
+        {
+            if (_input == null)
+            {
+                return false;
+            }
+
+            return _input.ConsumeJump();
+        }
+
+        private bool ConsumeDash()
+        {
+            if (_input == null)
+            {
+                return false;
+            }
+
+            return _input.ConsumeDash();
         }
 
         private void RefreshGround()
@@ -352,6 +394,7 @@ namespace SlipUp
             Vector3 velocity = _rigidbody.linearVelocity;
             velocity.y = _jumpSpeed;
             _rigidbody.linearVelocity = velocity;
+            Jumped?.Invoke();
         }
 
         private void TryStartDash(float maxSpeed)
@@ -383,6 +426,7 @@ namespace SlipUp
             _isDashing = true;
             _dashCooldownLeft = _dashCooldown;
             BeginDashPass();
+            Dashed?.Invoke();
         }
 
         private Vector3 GetWishDirection()
@@ -406,10 +450,16 @@ namespace SlipUp
                 _dashDistanceLeft -= step;
             }
 
-            Vector3 wishVelocity = GetWishDirection() * maxSpeed;
-            Vector3 alongDash = Vector3.Project(wishVelocity, _dashDirection);
-            Vector3 lateralVelocity = wishVelocity - alongDash;
-            Vector3 planarVelocity = _dashDirection * _dashSpeed + lateralVelocity;
+            Vector3 dashRight = Vector3.Cross(Vector3.up, _dashDirection);
+
+            if (dashRight.sqrMagnitude > 0.0001f)
+            {
+                dashRight.Normalize();
+            }
+
+            float lateral = Vector3.Dot(GetWishDirection(), dashRight);
+            lateral = Mathf.Clamp(lateral, -1f, 1f);
+            Vector3 planarVelocity = _dashDirection * _dashSpeed + dashRight * (lateral * maxSpeed);
             _rigidbody.linearVelocity = new Vector3(planarVelocity.x, 0f, planarVelocity.z);
         }
 

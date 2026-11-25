@@ -17,10 +17,26 @@ namespace SlipUp
 
         private void Awake()
         {
+            if (_visual == null)
+            {
+                _visual = transform;
+            }
+
             _visualScale = _visual.localScale;
         }
 
-        protected virtual void OnDisable()
+        internal void BindVisual(Transform visual)
+        {
+            _visual = visual;
+            _visualScale = visual.localScale;
+        }
+
+        private void OnDisable()
+        {
+            HandleDisable();
+        }
+
+        protected virtual void HandleDisable()
         {
             if (_hitPunch == null)
             {

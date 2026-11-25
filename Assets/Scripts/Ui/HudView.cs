@@ -12,6 +12,7 @@ namespace SlipUp
         private const string DashReadyText = "Рывок";
         private const string DashCooldownFormat = "Рывок {0:0.0}";
         private const string LivesFormat = "Жизни: {0}";
+        private const string SeedFormat = "Сид: {0}";
 
         private static readonly Color DashReadyColor = Color.white;
         private static readonly Color DashCooldownColor = new Color(1f, 1f, 1f, 0.35f);
@@ -25,19 +26,34 @@ namespace SlipUp
         [SerializeField] private float _punchDuration = 0.35f;
 
         private RunModel _model;
+        private GameplayInput _input;
         private RectTransform _labelTransform;
         private Vector3 _labelScale;
         private Tween _punch;
+        private TextMeshProUGUI _seedLabel;
 
-        internal void Initialize(RunModel model)
+        internal void Initialize(RunModel model, GameplayInput input)
         {
             _model = model;
+            _input = input;
+            MobileControlsView controls = GetComponent<MobileControlsView>();
+
+            if (controls == null)
+            {
+                controls = gameObject.AddComponent<MobileControlsView>();
+            }
+
+            controls.Initialize(_input);
         }
 
         private void Awake()
         {
             _labelTransform = _label.rectTransform;
             _labelScale = _labelTransform.localScale;
+            _seedLabel = Instantiate(_livesLabel, _livesLabel.transform.parent);
+            _seedLabel.name = "SeedLabel";
+            RectTransform seedRect = _seedLabel.rectTransform;
+            seedRect.anchoredPosition = _livesLabel.rectTransform.anchoredPosition + new Vector2(0f, -42f);
         }
 
         private void OnEnable()
@@ -48,6 +64,7 @@ namespace SlipUp
             _model.DashChanged += OnDashChanged;
             _model.MessageChanged += OnMessageChanged;
             _model.RunnerPresenceChanged += OnRunnerPresenceChanged;
+            _model.SeedChanged += OnSeedChanged;
             Refresh();
         }
 
@@ -59,6 +76,7 @@ namespace SlipUp
             _model.DashChanged -= OnDashChanged;
             _model.MessageChanged -= OnMessageChanged;
             _model.RunnerPresenceChanged -= OnRunnerPresenceChanged;
+            _model.SeedChanged -= OnSeedChanged;
 
             if (_punch != null)
             {
@@ -72,6 +90,7 @@ namespace SlipUp
         private void OnDestroy()
         {
             _model = null;
+            _input = null;
         }
 
         private void Refresh()
@@ -81,6 +100,7 @@ namespace SlipUp
             ApplyLives(_model.Lives);
             ApplyMessage(_model.Message);
             ApplyDash(_model.IsDashReady, _model.DashCooldownLeft);
+            ApplySeed(_model.Seed);
         }
 
         private void OnScoreChanged(int score)
@@ -114,6 +134,11 @@ namespace SlipUp
             ApplyDash(_model.IsDashReady, _model.DashCooldownLeft);
         }
 
+        private void OnSeedChanged(int seed)
+        {
+            ApplySeed(seed);
+        }
+
         private void ApplyScore(int score)
         {
             _label.text = string.Format(ScoreFormat, score);
@@ -134,6 +159,11 @@ namespace SlipUp
         private void ApplyLives(int livesLeft)
         {
             _livesLabel.text = string.Format(LivesFormat, livesLeft);
+        }
+
+        private void ApplySeed(int seed)
+        {
+            _seedLabel.text = string.Format(SeedFormat, seed);
         }
 
         private void ApplyDash(bool isReady, float cooldownLeft)

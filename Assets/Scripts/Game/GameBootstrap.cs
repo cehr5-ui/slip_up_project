@@ -13,16 +13,25 @@ namespace SlipUp
 
         private SaveService _save;
         private RunModel _model;
+        private GameplayInput _input;
 
         private void Awake()
         {
+            Screen.orientation = ScreenOrientation.LandscapeLeft;
+
+            if (GetComponent<FxPool>() == null)
+            {
+                gameObject.AddComponent<FxPool>();
+            }
+
             _save = new SaveService();
             _model = new RunModel();
+            _input = new GameplayInput();
             _audio.Initialize(_save);
-            _menu.Initialize(_save, _audio);
-            _hud.Initialize(_model);
+            _menu.Initialize(_save, _audio, OnPlayPressed);
+            _hud.Initialize(_model, _input);
             _result.Initialize(_model);
-            _session.Initialize(_model, _save);
+            _session.Initialize(_model, _save, _input);
             _menu.PlayPressed += OnPlayPressed;
             _result.AgainPressed += OnAgainPressed;
             _result.MenuPressed += OnMenuPressed;
@@ -38,14 +47,12 @@ namespace SlipUp
             if (_menu != null)
             {
                 _menu.PlayPressed -= OnPlayPressed;
-                _menu = null;
             }
 
             if (_result != null)
             {
                 _result.AgainPressed -= OnAgainPressed;
                 _result.MenuPressed -= OnMenuPressed;
-                _result = null;
             }
 
             if (_model != null)
@@ -54,10 +61,8 @@ namespace SlipUp
                 _model = null;
             }
 
-            _session = null;
-            _audio = null;
-            _hud = null;
             _save = null;
+            _input = null;
         }
 
         private void OnPlayPressed()

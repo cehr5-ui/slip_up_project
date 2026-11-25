@@ -16,12 +16,5 @@ namespace SlipUp
             _hud.SetActive(isMenu == false && isResult == false);
             _result.SetActive(isResult);
         }
-
-        private void OnDestroy()
-        {
-            _menu = null;
-            _hud = null;
-            _result = null;
-        }
     }
 }

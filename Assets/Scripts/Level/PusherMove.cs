@@ -21,11 +21,15 @@ namespace SlipUp
                 .SetUpdate(UpdateType.Fixed);
         }
 
-        protected override void OnDisable()
+        protected override void HandleDisable()
         {
-            base.OnDisable();
-            _move.Kill();
-            _move = null;
+            if (_move != null)
+            {
+                _move.Kill();
+                _move = null;
+            }
+
+            base.HandleDisable();
         }
 
         private void OnDrawGizmos()

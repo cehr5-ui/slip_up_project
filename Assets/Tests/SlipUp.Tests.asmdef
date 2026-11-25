@@ -1,0 +1,20 @@
+{
+    "name": "SlipUp.Tests",
+    "rootNamespace": "SlipUp.Tests",
+    "references": [
+        "UnityEngine.TestRunner",
+        "Assembly-CSharp"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [
+        "nunit.framework.dll"
+    ],
+    "autoReferenced": false,
+    "defineConstraints": [
+        "SLIPUP_ENABLE_EDITOR_TESTS"
+    ],
+    "noEngineReferences": false
+}
