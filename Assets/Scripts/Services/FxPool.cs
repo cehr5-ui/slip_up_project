@@ -56,12 +56,14 @@ namespace SlipUp
         private ParticleSystem Create()
         {
             GameObject gameObject = new GameObject("Fx");
+            gameObject.SetActive(false);
             gameObject.transform.SetParent(transform, false);
             ParticleSystem system = gameObject.AddComponent<ParticleSystem>();
+            system.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
             ParticleSystem.MainModule main = system.main;
+            main.playOnAwake = false;
             main.duration = Lifetime;
             main.loop = false;
-            main.playOnAwake = false;
             main.startLifetime = 0.45f;
             main.startSpeed = 4.5f;
             main.startSize = 0.16f;
