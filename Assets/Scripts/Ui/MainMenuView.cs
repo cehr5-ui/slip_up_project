@@ -25,11 +25,17 @@ namespace SlipUp
 
         private SaveService _save;
         private Button _skinButton;
+        private Action _onPlay;
 
-        internal void Initialize(SaveService save, AudioService audio)
+        internal void Initialize(SaveService save, AudioService audio, Action onPlay)
         {
             _save = save;
             _audio = audio;
+            _onPlay = onPlay;
+            _playButton.onClick.RemoveListener(OnPlayClicked);
+            _playButton.onClick.AddListener(OnPlayClicked);
+            ApplyStoredSound();
+            ShowLastPlayed();
         }
 
         private void Awake()
@@ -39,11 +45,15 @@ namespace SlipUp
 
         private void OnEnable()
         {
-            ApplyStoredSound();
+            if (_save != null)
+            {
+                ApplyStoredSound();
+                ShowLastPlayed();
+            }
+
             _playButton.onClick.AddListener(OnPlayClicked);
             _skinButton.onClick.AddListener(OnSkinClicked);
             _soundToggle.onValueChanged.AddListener(OnSoundChanged);
-            ShowLastPlayed();
             ShowControls();
         }
 
@@ -57,6 +67,7 @@ namespace SlipUp
         private void OnDestroy()
         {
             PlayPressed = null;
+            _onPlay = null;
             _save = null;
             _controlsLabel = null;
             _audio = null;
@@ -128,6 +139,12 @@ namespace SlipUp
 
         private void OnPlayClicked()
         {
+            if (_onPlay != null)
+            {
+                _onPlay.Invoke();
+                return;
+            }
+
             PlayPressed?.Invoke();
         }
 

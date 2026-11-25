@@ -114,16 +114,8 @@ namespace SlipUp
             if (_track != null)
             {
                 _track.FinishReached -= OnFinishReached;
-                _track = null;
             }
 
-            _arena = null;
-            _spawner = null;
-            _camera = null;
-            _screens = null;
-            _model = null;
-            _save = null;
-            _input = null;
             _countStep = null;
             _fallFreeze = null;
             _ragdollWait = null;
@@ -293,6 +285,11 @@ namespace SlipUp
 
         private void SetPhase(RunPhase phase)
         {
+            if (_model == null || _screens == null)
+            {
+                return;
+            }
+
             _model.SetPhase(phase);
             _screens.Show(phase);
         }
