@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
 
 namespace SlipUp
@@ -7,7 +8,7 @@ namespace SlipUp
     {
         private void Update()
         {
-            if (Input.GetKeyDown(KeyCode.R) == false)
+            if (KeyboardMouse.WasPressed(Key.R) == false)
             {
                 return;
             }

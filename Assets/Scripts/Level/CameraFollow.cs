@@ -185,7 +185,7 @@ namespace SlipUp
 
         private void UpdateCursor()
         {
-            bool lockCursor = _isLookEnabled && Input.touchCount == 0 && HasLookStick() == false;
+            bool lockCursor = _isLookEnabled && KeyboardMouse.HasTouch() == false && HasLookStick() == false;
 
             if (lockCursor)
             {
@@ -200,8 +200,9 @@ namespace SlipUp
 
         private void ApplyLook()
         {
-            _yaw += Input.GetAxis("Mouse X") * _yawSpeed;
-            _currentPitch -= Input.GetAxis("Mouse Y") * _pitchSpeed;
+            Vector2 mouse = KeyboardMouse.MouseAxis();
+            _yaw += mouse.x * _yawSpeed;
+            _currentPitch -= mouse.y * _pitchSpeed;
 
             if (HasLookStick())
             {

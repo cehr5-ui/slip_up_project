@@ -1,5 +1,6 @@
 using Unity.Collections;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 namespace SlipUp
 {
@@ -139,6 +140,7 @@ namespace SlipUp
             ClearTouchingDashWalls();
             Destroy(_slideMaterial);
             _slideMaterial = null;
+            _isReady = false;
             _model = null;
             _cameraTransform = null;
             _input = null;
@@ -149,7 +151,7 @@ namespace SlipUp
 
         private void Update()
         {
-            if (_isReady == false)
+            if (_isReady == false || _model == null)
             {
                 return;
             }
@@ -176,12 +178,12 @@ namespace SlipUp
 
             _planarInput = ReadPlanarInput();
 
-            if (Input.GetKeyDown(KeyCode.F) || ConsumeDash())
+            if (KeyboardMouse.WasPressed(Key.F) || ConsumeDash())
             {
                 _isDashRequested = true;
             }
 
-            if (Input.GetKeyDown(KeyCode.Space) || ConsumeJump())
+            if (KeyboardMouse.WasPressed(Key.Space) || ConsumeJump())
             {
                 _isJumpRequested = true;
             }
@@ -305,7 +307,7 @@ namespace SlipUp
 
             if (move.sqrMagnitude <= 0.0001f)
             {
-                move = new Vector2(Input.GetAxisRaw("Horizontal"), Input.GetAxisRaw("Vertical"));
+                move = KeyboardMouse.PlanarAxes();
             }
 
             if (move.sqrMagnitude > 1f)
